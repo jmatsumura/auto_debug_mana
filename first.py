@@ -29,9 +29,6 @@ from selenium import webdriver
 # Generate a new log filename with a random ID
 fileName = '/tmp/manateeAutoDebug.' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) 
 
-b='BEFORE' # These two lines are used for log_results function, they are
-a='AFTER'  # declared for the sake of simplicity
-
 pathToManatee 	=  str(sys.argv[1]) # let the user specify which server to test
 username 	=  str(sys.argv[2]) # let the user specify username
 password 	=  str(sys.argv[3]) # let the user specify password
@@ -43,41 +40,124 @@ def main():
 	##########################################
 	######## TESTING PAGE = login.cgi ########
 	##########################################
+
 	currentCGI = 'login.cgi'
 
 	driver.get(pathToManatee)
 
-	# Test that the proper login page is displayed. 
-	#result = findInPage("user_name")
-	#if result != 'FAILED': result = findInPage("password")
-	#if result != 'FAILED': result = findInPage("database")
 	expectedList = ["user_name","password","database"]
 	result = verify_results(expectedList)	
-	log_results(currentCGI, result, fileName, b)
+	log_results(currentCGI, result, fileName, 'load')
 
 ######### Test the form
 	userBox = driver.find_element_by_name('user')
 	pwBox = driver.find_element_by_name('password')
 	dbBox = driver.find_element_by_name('db')
-	loginForm = driver.find_element_by_name('login_form')
+	loginForm = driver.find_element_by_name('login_form') # note that forms need to be reassigned every new page visit
 	userBox.send_keys(username)
 	pwBox.send_keys(password)
 	dbBox.send_keys(db)
 	loginForm.submit()
-	time.sleep(8) # wait for gateway to load
+	time.sleep(5) # wait for gateway to load
 
 ######### Test that the login successfully went through. 
-	expectedList = ["ACCESS LISTINGS"]
+	expectedList = ["ACCESS LISTINGS","ACCESS GENE CURATION PAGE",
+			"CHANGE ORGANISM DATABASE", "Data file downloads"]
 	result = verify_results(expectedList)	
-	log_results(currentCGI, result, fileName, a)
+	log_results(currentCGI, result, fileName, 'submit')
+	time.sleep(2)
 
 	##########################################
 	####### TESTING PAGE = gateway.cgi #######
 	##########################################
-	result = ''
-	currentCGI = 'gateway.cgi'
+	# As gateway links to numerous pages, many testing pages will fall under this umbrella
 
-	#log_results(currentCGI, 'FAILED', fileName)
+######### Go to Search/Browse
+	currentCGI = 'ann_tools.cgi'
+	driver.find_element_by_partial_link_text("Search/Browse").click() 
+	expectedList = ["ACCESS GENE LISTS","select coordinate range:","ROLE CATEGORY BREAKDOWN",
+			"SEARCH GENES BY"]
+	time.sleep(5)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Go to Genome Viewer
+	currentCGI = 'genome_viewer.cgi'
+	driver.find_element_by_partial_link_text("Genome Viewer").click() 
+	expectedList = ["Find Orf","Coord Search"]
+	time.sleep(20)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.back() # currently, genome viewer has no home link
+
+######### Go to Genome Statistics
+	currentCGI = 'summary_page.cgi'
+	driver.find_element_by_partial_link_text("Genome Statistics").click() 
+	expectedList = ["24.8%","25.7%","24.9%","24.6%","Genome Summary",
+			"5204","88","13","4462","5245125 bp"]
+	time.sleep(5)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Go to Role Category Breakdown
+	currentCGI = 'roleid_breakdown.cgi'
+	driver.find_element_by_partial_link_text("Role Category Breakdown").click() 
+	expectedList = ["69.7","15.2","4.0","0.0","7.8", "0.7",
+			"Role category not yet assigned","407",
+			"Hypothetical proteins","828"]
+	time.sleep(5)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Go to Overlap summary
+	currentCGI = 'overlap_summary.cgi'
+	driver.find_element_by_partial_link_text("Overlap Summary").click() 
+	expectedList = ["VAC_148","170895","171202","44 nucleotides","VAC_150","171040","171202",
+			"VAC_5210","5173634","5174493","35 nucleotides","VAC_5211","5174340","5174493"]
+	time.sleep(5)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Test going to GCP
+	currentCGI = 'ORF_infopage.cgi'
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('orf')
+	dbBox.send_keys('VAC_241')
+	gatewayForm.submit()
+	expectedList = ["VAC_241","end5/end3:","550","undecaprenyl phosphate","GO:0016763","Cellular processes",
+			"Start confidence not calculated","Frameshift Name","EVIDENCE PICTURE","PF02366.13",
+			"COG1807","No prosite data available","0.209","0.365","CHARACTERIZED MATCH","UniRef100_B1X8X0"]
+	time.sleep(10)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Test changing db
+	currentCGI = 'gateway.cgi'
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('new_db')
+	dbBox.send_keys('abau')
+	gatewayForm.submit()
+	expectedList = ["Acinetobacter baumannii ATCC 17978"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'change db')
+	time.sleep(2)
+
+######### Revert to test db
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('new_db')
+	dbBox.send_keys('VAC_test')
+	gatewayForm.submit()
+	expectedList = ["Escherichia coli VAC1"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'change db back')
+
+######### DONE
+	time.sleep(10) # hang a bit before the end
 	driver.quit()
 
 ###################################
@@ -87,15 +167,14 @@ def main():
 # Function to log the results. Takes in the name of the script
 # being assessed, the result found for the script, the path
 # to the file being written to /tmp/ for output, and an
-# option for which page is being tested. Since on Manatee
-# many pages require submissions, pass the 'b' parameter
-# (Before submit) if testing the current page or 'a' parameter
-# (After submit) if testing the page that appears after a form
-# submission is performed. 
-def log_results(script, result, pathToFile, o):
+# a brief description of what aspect of the script is being 
+# tested. For instance, on the gateway.cgi page there are 
+# many different options to providing a brief description of
+# the current test helps communicate which part of it failed. 
+def log_results(script, result, pathToFile, desc):
 
 	f = open(pathToFile, 'a+')
-	f.write("%s\t\t%s\t\t%s\n" % (script, o, result))
+	f.write("%s\t\t\t%s\t\t\t%s\n" % (script, desc, result))
 
 	if result == 'FAILED': sys.exit() # end everything at first failure
 
