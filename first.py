@@ -19,11 +19,11 @@
 # body that start at the left end of the page with hashmarks detail a
 # specific component of the page that is being tested.  
 #
-# HOWTO: (python) first.py http://path/to/manatee/site/login
+# HOWTO: (python) first.py http://path/to/manatee/site/login username password db
 #
 # Author: James Matsumura
 
-import time, string, random, sys
+import time, string, random, sys, filecmp, glob, os
 from selenium import webdriver
 
 # Generate a new log filename with a random ID
@@ -37,9 +37,9 @@ driver = webdriver.Chrome()  # Optional argument to find chromedriver install
 
 def main():
 
-	##########################################
-	######## TESTING PAGE = login.cgi ########
-	##########################################
+##########################################
+######## TESTING PAGE = login.cgi ########
+##########################################
 
 	currentCGI = 'login.cgi'
 
@@ -67,10 +67,10 @@ def main():
 	log_results(currentCGI, result, fileName, 'submit')
 	time.sleep(2)
 
-	##########################################
-	####### TESTING PAGE = gateway.cgi #######
-	##########################################
-	# As gateway links to numerous pages, many testing pages will fall under this umbrella
+##########################################
+####### TESTING PAGE = gateway.cgi #######
+##########################################
+# As gateway links to numerous pages, many testing pages will fall under this umbrella
 
 ######### Go to Search/Browse
 	currentCGI = 'ann_tools.cgi'
@@ -86,7 +86,7 @@ def main():
 	currentCGI = 'genome_viewer.cgi'
 	driver.find_element_by_partial_link_text("Genome Viewer").click() 
 	expectedList = ["Find Orf","Coord Search"]
-	time.sleep(20)
+	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.back() # currently, genome viewer has no home link
@@ -131,7 +131,7 @@ def main():
 	expectedList = ["VAC_241","end5/end3:","550","undecaprenyl phosphate","GO:0016763","Cellular processes",
 			"Start confidence not calculated","Frameshift Name","EVIDENCE PICTURE","PF02366.13",
 			"COG1807","No prosite data available","0.209","0.365","CHARACTERIZED MATCH","UniRef100_B1X8X0"]
-	time.sleep(10)
+	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -155,6 +155,118 @@ def main():
 	expectedList = ["Escherichia coli VAC1"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'change db back')
+	time.sleep(2)
+
+######### Run BLASTN
+	currentCGI = 'perform_blast.cgi'
+	gatewayForm = driver.find_element_by_name('form1')
+	driver.find_element_by_css_selector("#blastn").click()
+	blastInputBox = driver.find_element_by_name('seq')
+	# Need to come back to this, but using """awoiefj""" as a block quote
+	# for this data ruins Manatee. Submits ALL the forms at once. It looks
+	# like some post-processing is need to make it an interpretable string
+	# on the manatee side. 
+	blastInputBox.send_keys(''
+		'ATGAAATCGGTACGTTACCTTATCGGCCTCTTCGCATTTATTGCCTGCTATTACCTGTTA'
+		'CCGATCAGCACGCGTCTGCTCTGGCAACCAGATGAAACGCGTTATGCGGAAATCAGTCGG'
+		'GAAATGCTGGCATCCGGCGACTGGATTGTTCCCCATCTGTTAGGGCTACGTTATTTCGAA'
+		'AAACCCATTGCCGGATACTGGATTAACAGCATTGGGCAATGGCTATTTGGCGCGAATAAC'
+		'TTTGGTGTGCGGGCAGGCGTTATCTTTGCGACCCTGTTAACTGCCGCGCTGGTGACCTGG'
+		'TTTACTCTGCGCTTATGGCGCGATAAACGTCTGGCTTTACTCGCCACAGTAATTTATCTC'
+		'TCATTGTTTATTGTCTATGCCATCGGCACTTATGCCGTGCTCGATCCGTTTATTGCCTTC'
+		'TGGCTGGTGGCGGGAATGTGCAGCTTCTGGCTGGCAATGCAGGCACAGACGTGGAAAGGC'
+		'AAAAGCGCAGGATTTTTACTGCTGGGAATCACCTGCGGCATGGGGGTGATGACCAAAGGT'
+		'TTTCTCGCCCTTGCCGTGCCGGTATTAAGCGTGCTGCCATGGGTAGCAACGCAAAAACGC'
+		'TGGAAAGATCTCTTTATTTACGGCTGGCTGGCGGTTATCAGTTGCGTACTGACGGTTCTC'
+		'CCCTGGGGACTGGCGATAGCGCAGCGGGAGCCTGACTTCTGGCATTATTTTTTCTGGGTT'
+				'')
+	time.sleep(4)
+	gatewayForm.submit()
+	expectedList = ["(720 letters)","VAC_241","1427","VAC_2870","VAC_1732",
+			"4,590,078","(28.2 bits)","Effective search space: 3172774528"]
+	time.sleep(10) # let the BLASTN run
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'BLASTN')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Run BLASTP
+	gatewayForm = driver.find_element_by_name('form1')
+	driver.find_element_by_css_selector("#blastp").click()
+	blastInputBox = driver.find_element_by_name('seq')
+	blastInputBox.send_keys(''
+		'VGLMWGLFSVIIASAAQLSLGFAASHLPPMTHLWDFIAALLAFGLDARILLLGLLGYLLS'
+		'VFCWYKTLHKLALSKAYALLSMSYVLVWIASMVLPGWEGTFSLKALLGVACIMSGLMLIF'
+		'LPTTKQRY'
+				'')
+	time.sleep(4)
+	gatewayForm.submit()
+	expectedList = ["(128 letters)","VAC_244","192","6e-51","VAC_3061",
+			"1,139,576","(22.7 bits)","Effective search space: 61537104"]
+	time.sleep(10) # let BLAST run
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'BLASTP')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Run TBLASTN
+	gatewayForm = driver.find_element_by_name('form1')
+	driver.find_element_by_css_selector("#tblastn").click()
+	blastInputBox = driver.find_element_by_name('seq')
+	blastInputBox.send_keys(''
+		'MIFSDWPWRHWRQVRGEAIALRLNDEQLNWRELCARVDELASSFAVQGVVEGSGVMLRAW'
+		'NTPQTLLAWLALLQCGARVLPVNPQLPQPLLEELLPNLTLQFALVPEGENTFPALASLHI'
+		'QLVEGAHAAAWQPTRLCSMTLTSGSTGLPKAAVHTYQAHLASAEGVLSLIPFGDHDDWLL'
+		'SLPLFHVSGQGIMWRWLYAGARMTVRDKQPLEQMLAGCTHASLVPTQLWRLLVNRSSVSL'
+		'KAVLLGGAAIPVELTEQAREQGIRCFCGYGLTEFASTVCAKEADGLADVGSPLPGREVKI'
+		'VNDEVWLRAASMAEGYWRNGQRVPLVNDEGWYATRDRGEMHNGKLTIVGRLDNLFFSGGE'
+		'GIQPEEVERVIAAHPAVLQVFIVPVADKEFGHRPVAVVEYDQQSVDLDEWVKDKLARFQQ'
+		'PVRWLTLPPELKNGGIKISRQALKEWVQRQQ'
+				'')
+	time.sleep(4)
+	gatewayForm.submit()
+	expectedList = ["(451 letters)","VAC.pseudomolecule.1","866","0.0",
+			"1,748,284","(26.2 bits)","Effective search space: 629382240"]
+	time.sleep(10) # let BLAST run
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'TBLASTN')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Change to db for dumper testing
+	# This DB is different than the previous since the previous is subject to insertions,
+	# deletions, and other modifications which may mislead the comparison of the data dumps
+	# to their initial reference result.
+	currentCGI = 'gateway.cgi'
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('new_db')
+	dbBox.send_keys('VAC1_test2')
+	gatewayForm.submit()
+	expectedList = ["Escherichia coli VAC1"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'change db for dump')
+	time.sleep(2)
+
+	##########################################
+	######### TESTING PAGE = DUMPERS #########
+	##########################################
+
+	pathToDataDumps = '/Users/jmatsumura/Downloads/VAC1_test2'
+		
+######### GO Annotation
+	currentCGI = 'nucleotide_dumper.cgi'
+	driver.find_element_by_partial_link_text('GO Annotation').click() 
+	time.sleep(180) # Overestimate dumper time to ensure it completes
+
+	# Find the most recent dl of this particular file and compare to reference
+	result = compare_dl_files('GO_annotation.txt')
+	log_results(currentCGI, result, fileName, 'GO dumper')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Coords
+	currentCGI = 'nucleotide_dumper.cgi'
+	driver.find_element_by_partial_link_text('Gene Coordinates').click() 
+	time.sleep(40) 
+	result = compare_dl_files('coord.txt')
+	log_results(currentCGI, result, fileName, 'Coords dumper')
+	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### DONE
 	time.sleep(10) # hang a bit before the end
@@ -174,7 +286,7 @@ def main():
 def log_results(script, result, pathToFile, desc):
 
 	f = open(pathToFile, 'a+')
-	f.write("%s\t\t\t%s\t\t\t%s\n" % (script, desc, result))
+	f.write("%s\t%s\t%s\n" % (script, desc, result))
 
 	if result == 'FAILED': sys.exit() # end everything at first failure
 
@@ -205,6 +317,16 @@ def verify_results(listOfExpected):
 		else: result = findInPage(x) 
 		
 	return result
+
+# This function is used to compare the current dumper output with
+# that of a reference. This will search for the most recently 
+# created file with the relevant suffix and run a diff of the two.
+def compare_dl_files(fileExtension):
+
+	newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2_'+fileExtension), key=os.path.getctime)
+	result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2_'+fileExtension, newestFile) else "FAILED"
+
+	return result 
 
 if __name__ == '__main__':
 	main()
