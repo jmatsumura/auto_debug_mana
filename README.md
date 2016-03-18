@@ -1,0 +1,1 @@
+# auto_debug_mana
