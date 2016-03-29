@@ -95,7 +95,7 @@ def main():
 	currentCGI = 'summary_page.cgi'
 	driver.find_element_by_partial_link_text("Genome Statistics").click() 
 	expectedList = ["24.8%","25.7%","24.9%","24.6%","Genome Summary",
-			"5204","88","13","4462","5245125 bp"]
+			"1100","tRNA","5245125 bp"]
 	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
@@ -104,9 +104,9 @@ def main():
 ######### Go to Role Category Breakdown
 	currentCGI = 'roleid_breakdown.cgi'
 	driver.find_element_by_partial_link_text("Role Category Breakdown").click() 
-	expectedList = ["69.7","15.2","4.0","0.0","7.8", "0.7",
-			"Role category not yet assigned","407",
-			"Hypothetical proteins","828"]
+	expectedList = ["703","Transposon functions","Chemotaxis and motility",
+			"Role category not yet assigned","Chlorophyll",
+			"Hypothetical proteins","94"]
 	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
@@ -162,10 +162,6 @@ def main():
 	gatewayForm = driver.find_element_by_name('form1')
 	driver.find_element_by_css_selector("#blastn").click()
 	blastInputBox = driver.find_element_by_name('seq')
-	# Need to come back to this, but using """awoiefj""" as a block quote
-	# for this data ruins Manatee. Submits ALL the forms at once. It looks
-	# like some post-processing is need to make it an interpretable string
-	# on the manatee side. 
 	blastInputBox.send_keys(''
 		'ATGAAATCGGTACGTTACCTTATCGGCCTCTTCGCATTTATTGCCTGCTATTACCTGTTA'
 		'CCGATCAGCACGCGTCTGCTCTGGCAACCAGATGAAACGCGTTATGCGGAAATCAGTCGG'
@@ -239,13 +235,10 @@ def main():
 	dbBox = driver.find_element_by_name('new_db')
 	dbBox.send_keys('VAC1_test2')
 	gatewayForm.submit()
-	expectedList = ["Escherichia coli VAC1"]
-	result = verify_results(expectedList)	
-	log_results(currentCGI, result, fileName, 'change db for dump')
 	time.sleep(2)
 
 	##########################################
-	######### TESTING PAGE = DUMPERS #########
+	########## TESTING FN = DUMPERS ##########
 	##########################################
 
 	pathToDataDumps = '/Users/jmatsumura/Downloads/VAC1_test2'
@@ -260,15 +253,108 @@ def main():
 	log_results(currentCGI, result, fileName, 'GO dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
+######### Annotation
+	driver.find_element_by_partial_link_text('Annotation').click() 
+	time.sleep(120) 
+	result = compare_dl_files('annotation.txt')
+	log_results(currentCGI, result, fileName, 'Annotation dumper')
+	driver.find_element_by_partial_link_text("Home").click() 
+
 ######### Coords
-	currentCGI = 'nucleotide_dumper.cgi'
 	driver.find_element_by_partial_link_text('Gene Coordinates').click() 
 	time.sleep(40) 
 	result = compare_dl_files('coord.txt')
 	log_results(currentCGI, result, fileName, 'Coords dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
-######### DONE
+######### Nucleotides
+	driver.find_element_by_partial_link_text('Gene Nucleotide Sequence').click() 
+	time.sleep(40) 
+	result = compare_dl_files('nucleotide_multifasta_seq.fsa')
+	log_results(currentCGI, result, fileName, 'Nucleotide dumper')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Protein seqs
+	driver.find_element_by_partial_link_text('Protein Sequence').click() 
+	time.sleep(40) 
+	result = compare_dl_files('protein_multifasta_seq.fsa')
+	log_results(currentCGI, result, fileName, 'Protein dumper')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Whole Genome
+	driver.find_element_by_partial_link_text('Whole Genome Nucleotide Sequence').click() 
+	time.sleep(40) 
+	result = compare_dl_files('whole_genome.txt')
+	log_results(currentCGI, result, fileName, 'Whole genome')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+# These last 3 use a different script and have a different out format. 
+######### GenBank
+	driver.find_element_by_partial_link_text('GenBank Format').click() 
+	time.sleep(120) 
+	result = compare_dl_files_type_2('gbk')
+	log_results(currentCGI, result, fileName, 'GenBank')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### GFF3
+	driver.find_element_by_partial_link_text('GFF3 Format').click() 
+	time.sleep(120) 
+	result = compare_dl_files_type_2('gff3')
+	log_results(currentCGI, result, fileName, 'GFF3')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### TBL
+	driver.find_element_by_partial_link_text('TBL Format').click() 
+	time.sleep(120) 
+	result = compare_dl_files_type_2('tbl')
+	log_results(currentCGI, result, fileName, 'TBL')
+	driver.find_element_by_partial_link_text("Home").click() 
+
+##########################################
+#### TESTING PAGE = ORF_infopage.cgi #####
+##########################################
+# Already know GCP works, renavigate to same page. 
+
+	currentCGI = 'gateway.cgi'
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('new_db')
+	dbBox.send_keys('VAC_test')
+	gatewayForm.submit()
+	time.sleep(2)
+
+	currentCGI = 'ORF_infopage.cgi'
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('orf')
+	dbBox.send_keys('VAC_241')
+	gatewayForm.submit()
+	time.sleep(5)
+
+	##########################################
+	#### TESTING PAGE = btab_display.cgi #####
+	##########################################
+
+	currentCGI = 'btab_display.cgi'
+	driver.find_element_by_partial_link_text('View BER Searches').click() 
+	time.sleep(5) # let page load
+	expectedList = ["UniRef100_B1X8X0","UniRef100_D7ZXT5","VAC.transcript.9703630972.1" 
+			"VAC.CDS.980363074.1","%Identity = 98.7","%Similarity = 99.5"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'BER Searches Display')
+
+	driver.find_element_by_partial_link_text('UniRef100_B1X8X0').click() 
+	time.sleep(4)
+	expectedList = ["Undecaprenyl phosphate-alpha-amino-4-deoxy-L-arabinose arabinosyl transferase", 
+			"UniProt","UniRef100_B1X8X0"]
+	result = verify_results(expectedList)	
+	log_results("link", result, fileName, 'UniProt/UniRef')
+	# New tab opened for UniProt, must close go back to BER display
+	driver.send_keys(Keys.COMMAND + 'w')
+	# New tab opened for BER display, must go back to GCP
+	driver.send_keys(Keys.COMMAND + 'w')
+
+############################
+########## DONE ############
+############################
 	time.sleep(10) # hang a bit before the end
 	driver.quit()
 
@@ -318,13 +404,21 @@ def verify_results(listOfExpected):
 		
 	return result
 
-# This function is used to compare the current dumper output with
+# These two functions are used to compare the current dumper output with
 # that of a reference. This will search for the most recently 
 # created file with the relevant suffix and run a diff of the two.
 def compare_dl_files(fileExtension):
 
 	newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2_'+fileExtension), key=os.path.getctime)
 	result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2_'+fileExtension, newestFile) else "FAILED"
+
+	return result 
+
+def compare_dl_files_type2(fileExtension):
+
+	# Be sure to account for any date that may be attached.
+	newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2.annotation.*.'+fileExtension), key=os.path.getctime)
+	result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2.annotation.20160329.'+fileExtension, newestFile) else "FAILED"
 
 	return result 
 
