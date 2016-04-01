@@ -23,7 +23,7 @@
 #
 # Author: James Matsumura
 
-import time, string, random, sys, filecmp, glob, os
+import time, string, random, sys, filecmp, glob, os, subprocess
 from selenium import webdriver
 
 # Generate a new log filename with a random ID
@@ -33,7 +33,7 @@ pathToManatee 	=  str(sys.argv[1]) # let the user specify which server to test
 username 	=  str(sys.argv[2]) # let the user specify username
 password 	=  str(sys.argv[3]) # let the user specify password
 db		=  str(sys.argv[4]) # let the user specify db
-driver = webdriver.Chrome()  # Optional argument to find chromedriver install
+driver = webdriver.Chrome()  
 
 def main():
 
@@ -254,7 +254,8 @@ def main():
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Annotation
-	driver.find_element_by_partial_link_text('Annotation').click() 
+	# need to handle this a little differently to avoid clicking GO Annotation
+	driver.find_element_by_id('just_annotation').click() 
 	time.sleep(120) 
 	result = compare_dl_files('annotation.txt')
 	log_results(currentCGI, result, fileName, 'Annotation dumper')
@@ -288,25 +289,24 @@ def main():
 	log_results(currentCGI, result, fileName, 'Whole genome')
 	driver.find_element_by_partial_link_text("Home").click() 
 
-# These last 3 use a different script and have a different out format. 
 ######### GenBank
 	driver.find_element_by_partial_link_text('GenBank Format').click() 
 	time.sleep(120) 
-	result = compare_dl_files_type_2('gbk')
+	result = compare_dl_files('gbk')
 	log_results(currentCGI, result, fileName, 'GenBank')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### GFF3
 	driver.find_element_by_partial_link_text('GFF3 Format').click() 
 	time.sleep(120) 
-	result = compare_dl_files_type_2('gff3')
+	result = compare_dl_files('gff3')
 	log_results(currentCGI, result, fileName, 'GFF3')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### TBL
 	driver.find_element_by_partial_link_text('TBL Format').click() 
 	time.sleep(120) 
-	result = compare_dl_files_type_2('tbl')
+	result = compare_dl_files('tbl')
 	log_results(currentCGI, result, fileName, 'TBL')
 	driver.find_element_by_partial_link_text("Home").click() 
 
@@ -336,8 +336,8 @@ def main():
 	currentCGI = 'btab_display.cgi'
 	driver.find_element_by_partial_link_text('View BER Searches').click() 
 	time.sleep(5) # let page load
-	expectedList = ["UniRef100_B1X8X0","UniRef100_D7ZXT5","VAC.transcript.9703630972.1" 
-			"VAC.CDS.980363074.1","%Identity = 98.7","%Similarity = 99.5"]
+	expectedList = ["UniRef100_B1X8X0","UniRef100_D7ZXT5","VAC.CDS.9803630974.1" 
+			"VAC.CDS.980363074.1","%Identity", " = 98.7","%Similarity", "= 99.5"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'BER Searches Display')
 
@@ -409,16 +409,30 @@ def verify_results(listOfExpected):
 # created file with the relevant suffix and run a diff of the two.
 def compare_dl_files(fileExtension):
 
-	newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2_'+fileExtension), key=os.path.getctime)
-	result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2_'+fileExtension, newestFile) else "FAILED"
+	# Need to handle gbk in a unique manner as the date will always modify the file slightly so a diff will return false
+	if fileExtension == 'gbk':
+		newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2.annotation.*.'+fileExtension), key=os.path.getctime)
+		my_cmd = ['diff', '/Users/jmatsumura/mana_dumps/VAC1_test2.annotation.20160329.gbk'] + [newestFile]
+		with open('/Users/jmatsumura/mana_dumps/gbk_diff.txt', "w") as outfile:
+			subprocess.call(my_cmd, stdout=outfile)
+		result = "OK" if os.stat("/Users/jmatsumura/mana_dumps/gbk_diff.txt").st_size < 300 else "FAILED"
 
-	return result 
+	# Similar to the previous, handle by file size differences. 
+	elif fileExtension == 'GO_annotation.txt':
+		newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2_'+fileExtension), key=os.path.getctime)
+		my_cmd = ['diff', '/Users/jmatsumura/mana_dumps/VAC1_test2_GO_annotation.txt'] + [newestFile]
+		with open('/Users/jmatsumura/mana_dumps/GO_diff.txt', "w") as outfile:
+			subprocess.call(my_cmd, stdout=outfile)
+		f_size = os.stat("/Users/jmatsumura/mana_dumps/GO_diff.txt").st_size
+		result = "OK" if ((f_size > 2200000) and (f_size < 2900000)) else "FAILED"
 
-def compare_dl_files_type2(fileExtension):
+	elif fileExtension == 'tbl' or fileExtension == 'gff3':
+		newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2.annotation.*.'+fileExtension), key=os.path.getctime)
+		result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2.annotation.20160329.'+fileExtension, newestFile) else "FAILED"
 
-	# Be sure to account for any date that may be attached.
-	newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2.annotation.*.'+fileExtension), key=os.path.getctime)
-	result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2.annotation.20160329.'+fileExtension, newestFile) else "FAILED"
+	else:
+		newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2_'+fileExtension), key=os.path.getctime)
+		result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2_'+fileExtension, newestFile) else "FAILED"
 
 	return result 
 
