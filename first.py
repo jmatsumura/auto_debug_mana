@@ -25,6 +25,8 @@
 
 import time, string, random, sys, filecmp, glob, os, subprocess
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 
 # Generate a new log filename with a random ID
 fileName = '/tmp/manateeAutoDebug.' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) 
@@ -68,7 +70,7 @@ def main():
 	time.sleep(2)
 
 ##########################################
-####### TESTING PAGE = gateway.cgi #######
+###### TESTING SUITE = gateway.cgi #######
 ##########################################
 # As gateway links to numerous pages, many testing pages will fall under this umbrella
 
@@ -97,6 +99,14 @@ def main():
 	expectedList = ["24.8%","25.7%","24.9%","24.6%","Genome Summary",
 			"1100","tRNA","5245125 bp"]
 	time.sleep(5)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+
+######### Go to RNA display page
+	currentCGI = 'display_feature.cgi'
+	driver.find_element_by_partial_link_text('tRNA').click() 
+	time.sleep(5) # let page load
+	expectedList = ["VAC_171","VAC_5307","tRNA-Pro","VAC.pseudomolecule.1"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -237,6 +247,8 @@ def main():
 	gatewayForm.submit()
 	time.sleep(2)
 
+	'''
+
 	##########################################
 	########## TESTING FN = DUMPERS ##########
 	##########################################
@@ -309,11 +321,15 @@ def main():
 	result = compare_dl_files('tbl')
 	log_results(currentCGI, result, fileName, 'TBL')
 	driver.find_element_by_partial_link_text("Home").click() 
+	
+	'''
 
 ##########################################
-#### TESTING PAGE = ORF_infopage.cgi #####
+#### TESTING SUITE = ORF_infopage.cgi ####
 ##########################################
-# Already know GCP works, renavigate to same page. 
+# This section will test all the potential links that a user could
+# used on the GCP. Already know it loads fine, so navigate to the 
+# same page. 
 
 	currentCGI = 'gateway.cgi'
 	gatewayForm = driver.find_element_by_name('form1')
@@ -333,24 +349,290 @@ def main():
 	#### TESTING PAGE = btab_display.cgi #####
 	##########################################
 
+	# For those pages which open new windows, handle using window_handles
+	gateway_window = driver.window_handles[0]
+
+######## Test the links within the btab display
 	currentCGI = 'btab_display.cgi'
 	driver.find_element_by_partial_link_text('View BER Searches').click() 
 	time.sleep(5) # let page load
-	expectedList = ["UniRef100_B1X8X0","UniRef100_D7ZXT5","VAC.CDS.9803630974.1" 
-			"VAC.CDS.980363074.1","%Identity", " = 98.7","%Similarity", "= 99.5"]
+
+	ber_window = driver.window_handles[1]
+	driver.switch_to_window(ber_window)
+	
+	expectedList = ["UniRef100_B1X8X0","UniRef100_D7ZXT5","VAC.CDS.9803630974.1", 
+			"VAC.CDS.9803630974.1","%Identity = 98.7","%Similarity = 99.5"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'BER Searches Display')
 
+######## TESTING LINK = UniRef #######
 	driver.find_element_by_partial_link_text('UniRef100_B1X8X0').click() 
-	time.sleep(4)
-	expectedList = ["Undecaprenyl phosphate-alpha-amino-4-deoxy-L-arabinose arabinosyl transferase", 
+	time.sleep(10)
+
+	uniref_window = driver.window_handles[2]
+	driver.switch_to_window(uniref_window)
+
+	expectedList = ["Undecaprenyl phosphate-alpha","ARNT_ECODH",
 			"UniProt","UniRef100_B1X8X0"]
 	result = verify_results(expectedList)	
 	log_results("link", result, fileName, 'UniProt/UniRef')
-	# New tab opened for UniProt, must close go back to BER display
-	driver.send_keys(Keys.COMMAND + 'w')
-	# New tab opened for BER display, must go back to GCP
-	driver.send_keys(Keys.COMMAND + 'w')
+	driver.close() # New tab opened for UniProt, must close go back to BER display
+	driver.switch_to_window(ber_window)
+	driver.close() # New tab opened for BER display, must go back to GCP
+	# This logic for switching between windows and closing those already checked
+	# will now persist throughout. 
+	driver.switch_to_window(gateway_window)
+
+	######################
+	## LINKS WITHIN GCP ##
+	######################
+
+######## TESTING LINK = ExPASy #######
+	driver.find_element_by_partial_link_text('EC number(s)').click() 
+	time.sleep(10)
+	expasy_window = driver.window_handles[1]
+	driver.switch_to_window(expasy_window)
+	expectedList = ["Lipid IV(A) 4-amino-4-deoxy-L-arabinosyltransferase",
+			"2.4.2.43"]
+	result = verify_results(expectedList)	
+	log_results("link", result, fileName, 'ExPASy ENZYME')
+	driver.close()
+	driver.switch_to_window(gateway_window)
+	
+######## TESTING LINK = Gene Ontology #######
+	driver.find_element_by_partial_link_text('GO:0009103').click() 
+	time.sleep(10)
+	amigo_window = driver.window_handles[1]
+	driver.switch_to_window(amigo_window)
+	expectedList = ["lipopolysaccharide biosynthetic process",
+			"GO:0009103","lpxK","gosubset_prok"]
+	result = verify_results(expectedList)	
+	log_results("link", result, fileName, 'AmiGO 2')
+	driver.close()
+	driver.switch_to_window(gateway_window)
+
+######## TESTING LINK = AmiGO Search #######
+	driver.find_element_by_partial_link_text('Search AmiGO').click() 
+	time.sleep(10)
+	amigo2_window = driver.window_handles[1]
+	driver.switch_to_window(amigo2_window)
+	expectedList = ["AmiGO 2"] # Cautious about what will change on the site
+	result = verify_results(expectedList)	
+	log_results("link", result, fileName, 'AmiGO Search')
+	driver.close()
+	driver.switch_to_window(gateway_window)
+
+######## TESTING LINK = Gene Ontology Evidence #######
+	driver.find_element_by_partial_link_text('IEA').click() 
+	time.sleep(10)
+	geneOntology_window = driver.window_handles[1]
+	driver.switch_to_window(geneOntology_window)
+	expectedList = ["Inferred from Electronic Annotation (IEA)",
+			"Experimental Evidence Codes","NAS"]
+	result = verify_results(expectedList)	
+	log_results("link", result, fileName, 'Gene Ontology')
+	driver.close()
+	driver.switch_to_window(gateway_window)
+
+######## TESTING LINK = Pfam #######
+	driver.find_element_by_partial_link_text('PF13231.1').click() 
+	time.sleep(10)
+	pfam_window = driver.window_handles[1]
+	driver.switch_to_window(pfam_window)
+	expectedList = ["Dolichyl-phosphate-mannose-protein mannosyltransferase",
+			"PF02366"]
+	result = verify_results(expectedList)	
+	log_results("link", result, fileName, 'Pfam')
+	driver.close()
+	driver.switch_to_window(gateway_window)
+
+######## TESTING LINK = COG #######
+	driver.find_element_by_partial_link_text('COG1807').click() 
+	time.sleep(10)
+	cog_window = driver.window_handles[1]
+	driver.switch_to_window(cog_window)
+	expectedList = ["4-amino-4-deoxy-L-arabinose transferase or related glycosyltransferase",
+			"ArnT","COG1807"]
+	result = verify_results(expectedList)	
+	log_results("link", result, fileName, 'Pfam')
+	driver.close()
+	driver.switch_to_window(gateway_window)
+
+	##########################################
+	#### TESTING PAGE = sigp_display.cgi #####
+	##########################################
+
+	currentCGI = 'sigp_display.cgi'
+	driver.find_element_by_partial_link_text('Graphical Display').click() 
+	time.sleep(8)
+	sigp_window = driver.window_handles[1]
+	driver.switch_to_window(sigp_window)
+	expectedList = ["VAC.transcript.9803630972.1",
+			"Please configure the options below","Download raw SignalP"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'SigP graphical output')
+
+######## Make sure SigP output can be downloaded
+	driver.find_element_by_partial_link_text('here').click() 
+	time.sleep(10)
+	result = compare_dl_files('sigp')
+	log_results(currentCGI, result, fileName, 'SigP Download')
+
+######## Make sure SigP can be run on the fly
+	aaBox = driver.find_element_by_name('aa_length')
+	aaBox.send_keys(Keys.BACKSPACE)
+	aaBox.send_keys(Keys.BACKSPACE)
+	aaBox.send_keys("80")
+	time.sleep(3)
+	oType = driver.find_element_by_name('type')
+	for option in oType.find_elements_by_tag_name('option'):
+    	    if option.text == ' gram+ ':
+        	option.click() 
+        	break
+
+	sigpForm = driver.find_element_by_name('submit')
+	sigpForm.submit()
+	time.sleep(10)
+
+	expectedList = ["VAC.transcript.9803630972.1",
+			"Please configure the options below","Download raw SignalP"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'SigP rerun')
+
+	driver.close()
+	driver.switch_to_window(gateway_window)
+	driver.find_element_by_partial_link_text("Home").click() 
+
+##########################################
+##### TESTING SUITE = ann_tools.cgi ######
+##########################################
+
+	driver.find_element_by_partial_link_text("Search/Browse").click() 
+
+######## Check all categories, ordered by role category
+	currentCGI = 'submit_begin_all.cgi'
+	sbForm = driver.find_element_by_name('form1')
+	sbForm.submit()	
+	time.sleep(12)
+	expectedList = ["All categories","Viral functions","other roles","VAC_767",
+			"1293565","3-deoxy-7-phosphoheptulonate synthase","VAC_1557"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'all category load')
+	driver.find_element_by_partial_link_text("SEARCH AGAIN").click() 
+
+######## Check sorting by just DNA metabolism role category
+	oType = driver.find_element_by_name('role_order')
+	for option in oType.find_elements_by_tag_name('option'):
+    	    if option.text == 'DNA metabolism':
+        	option.click() 
+        	break
+	sbForm = driver.find_element_by_name('form1')
+	sbForm.submit()	
+	time.sleep(12)
+	expectedList = ["All categories","Viral functions","other roles","VAC_523","850048",
+			"5'-3' exonuclease, C-terminal SAM fold family protein","VAC_2367"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'single category load')
+	driver.find_element_by_partial_link_text("SEARCH AGAIN").click() 
+
+######## Check sorting by just role ID 93
+	roleIdBox = driver.find_element_by_name('role_id')
+	for x in range(0,7): # there must be a better way!
+		roleIdBox.send_keys(Keys.BACKSPACE) 
+	roleIdBox.send_keys("93")
+	time.sleep(3)
+	sbForm = driver.find_element_by_name('form1')
+	sbForm.submit()	
+	time.sleep(12)
+	expectedList = ["All categories","Viral functions","other roles","VAC_384","416094",
+			"septum site-determining protein MinD","VAC_2621"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'single role id load')
+	driver.find_element_by_partial_link_text("SEARCH AGAIN").click() 
+
+######## Check that coord search is correct
+	currentCGI = 'coordinate_view.cgi'
+	end5 = driver.find_element_by_name('end5')
+	end3 = driver.find_element_by_name('end3')
+	end5.send_keys("1000")
+	end3.send_keys("5000")
+	sbForm = driver.find_element_by_name('form1')
+	sbForm.submit()	
+	time.sleep(12)
+	expectedList = ["VAC.pseudomolecule.1","1000 - 5000","gene name",
+			"UDP-glucose 6-dehydrogenase","VAC_3","2746","1.1.1.44"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("SEARCH AGAIN").click() 
+
+######### Go to Role Category Breakdown (need to make sure link works from this page) 
+	currentCGI = 'roleid_breakdown.cgi'
+	driver.find_element_by_partial_link_text("ROLE CATEGORY BREAKDOWN").click() 
+	expectedList = ["703","Transposon functions","Chemotaxis and motility",
+			"Role category not yet assigned","Chlorophyll",
+			"Hypothetical proteins","94"]
+	time.sleep(10)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.execute_script("window.history.go(-1)")  
+
+	## THIS IS A PLACE HOLDER LIST UNTIL THE FILES ARE LOADED FOR PRODUCTION ##
+######### Go to Interevidence Search 
+	currentCGI = 'interevidence_search.cgi'
+	driver.find_element_by_partial_link_text("INTEREVIDENCE SEARCH RESULTS").click() 
+	expectedList = ["Escherichia coli 4_1","100.0",
+			"Fimbrial protein","94.4"]
+	time.sleep(20)
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("SEARCH AGAIN").click() 
+
+######### Search single query term 
+	currentCGI = 'search_ident.cgi'
+	oType = driver.find_element_by_id('selectOption')
+	for option in oType.find_elements_by_tag_name('option'):
+    	    if option.text == 'EC number':
+        	option.click() 
+        	break
+	queryBox = driver.find_element_by_name('queryWord')
+	queryBox.send_keys('2.1')
+	sbForm = driver.find_element_by_name('form1')
+	sbForm.submit()	
+	time.sleep(10)
+	expectedList = ["VAC_106","VAC_2850","2932255","uraH",
+			"2.1.1.-","argininosuccinate lyase","transaldolase"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("SEARCH AGAIN").click() 
+
+######### Search using combinatorial queries 
+	currentCGI = 'search_ident.cgi'
+	queryBox = driver.find_element_by_name('queryWord')
+	queryBox.send_keys('kinase')
+	driver.find_element_by_css_selector('searchMore').click()
+	driver.find_element_by_css_selector('searchMore').click()
+	oType = driver.find_element_by_id('sel1')
+	for option in oType.find_elements_by_tag_name('option'):
+    	    if option.text == 'EC number':
+        	option.click() 
+        	break
+	oType = driver.find_element_by_id('sel2')
+	for option in oType.find_elements_by_tag_name('option'):
+    	    if option.text == 'GO ID':
+        	option.click() 
+        	break
+	queryBox = driver.find_element_by_name('inp1')
+	queryBox.send_keys('103')
+	queryBox = driver.find_element_by_name('inp2')
+	queryBox.send_keys('GO:0004417')
+	sbForm = driver.find_element_by_name('form1')
+	sbForm.submit()	
+	time.sleep(10)
+	expectedList = ["VAC_78","91858","kinase","contains",
+			"120","103","1"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'load')
+	driver.find_element_by_partial_link_text("Home").click() 
 
 ############################
 ########## DONE ############
@@ -399,12 +681,14 @@ def verify_results(listOfExpected):
 	for x in listOfExpected:
 		if listOfExpected.index(x) > 0: 
 			if result != 'FAILED': result = findInPage(x)
-		elif result == 'FAILED': break 
+		elif result == 'FAILED':  
+			driver.quit()
+			break
 		else: result = findInPage(x) 
 		
 	return result
 
-# These two functions are used to compare the current dumper output with
+# This function is used to compare the current dumper output with
 # that of a reference. This will search for the most recently 
 # created file with the relevant suffix and run a diff of the two.
 def compare_dl_files(fileExtension):
@@ -429,6 +713,10 @@ def compare_dl_files(fileExtension):
 	elif fileExtension == 'tbl' or fileExtension == 'gff3':
 		newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2.annotation.*.'+fileExtension), key=os.path.getctime)
 		result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/VAC1_test2.annotation.20160329.'+fileExtension, newestFile) else "FAILED"
+
+	elif fileExtension == 'sigp':
+		newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/sigp4.1_VAC.transcript.9803630972.1_pred.txt'), key=os.path.getctime)
+		result = "OK" if filecmp.cmp('/Users/jmatsumura/mana_dumps/sigpOut.txt', newestFile) else "FAILED"
 
 	else:
 		newestFile = min(glob.iglob('/Users/jmatsumura/Downloads/VAC1_test2_'+fileExtension), key=os.path.getctime)
