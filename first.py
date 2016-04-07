@@ -179,8 +179,6 @@ def main():
 	log_results(currentCGI, result, fileName, 'change db back')
 	time.sleep(2)
 
-	'''
-
 ######### Run BLASTN
 	currentCGI = 'perform_blast.cgi'
 	gatewayForm = driver.find_element_by_name('form1')
@@ -333,8 +331,6 @@ def main():
 	result = compare_dl_files('tbl')
 	log_results(currentCGI, result, fileName, 'TBL')
 	driver.find_element_by_partial_link_text("Home").click() 
-	
-	'''
 
 ##########################################
 #### TESTING SUITE = ORF_infopage.cgi ####
