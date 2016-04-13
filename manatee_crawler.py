@@ -20,13 +20,16 @@
 # specific component of the page that is being tested.  
 #
 # HOWTO: (python) first.py http://path/to/manatee/site/login username password db
+# The standard version of this script is verifying data within the db VAC_test.
 #
 # Author: James Matsumura
 
 import time, string, random, sys, filecmp, glob, os, subprocess
+from random import randint
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 
 # Generate a new log filename with a random ID
 fileName = '/tmp/manateeAutoDebug.' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) 
@@ -47,6 +50,9 @@ def main():
 
 	driver.get(pathToManatee)
 
+	driver.set_window_size(1300,1100)
+	driver.set_window_position(0,0)
+
 	expectedList = ["user_name","password","database"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
@@ -59,15 +65,13 @@ def main():
 	userBox.send_keys(username)
 	pwBox.send_keys(password)
 	dbBox.send_keys(db)
-	loginForm.submit()
-	time.sleep(5) # wait for gateway to load
+	loginForm.submit(), time.sleep(5) # using time.sleep is not optimal, but works best for Manatee's setup
 
 ######### Test that the login successfully went through. 
 	expectedList = ["ACCESS LISTINGS","ACCESS GENE CURATION PAGE",
 			"CHANGE ORGANISM DATABASE", "Data file downloads"]
 	result = verify_results(expectedList)	
-	log_results(currentCGI, result, fileName, 'submit')
-	time.sleep(2)
+	log_results(currentCGI, result, fileName, 'submit'), time.sleep(2)
 
 ##########################################
 ###### TESTING SUITE = gateway.cgi #######
@@ -76,36 +80,32 @@ def main():
 
 ######### Go to Search/Browse
 	currentCGI = 'ann_tools.cgi'
-	driver.find_element_by_partial_link_text("Search/Browse").click() 
+	driver.find_element_by_partial_link_text("Search/Browse").click(), time.sleep(5)
 	expectedList = ["ACCESS GENE LISTS","select coordinate range:","ROLE CATEGORY BREAKDOWN",
 			"SEARCH GENES BY"]
-	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Go to Genome Viewer
 	currentCGI = 'genome_viewer.cgi'
-	driver.find_element_by_partial_link_text("Genome Viewer").click() 
+	driver.find_element_by_partial_link_text("Genome Viewer").click(), time.sleep(5)
 	expectedList = ["Find Orf","Coord Search"]
-	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.back() # currently, genome viewer has no home link
 
 ######### Go to Genome Statistics
 	currentCGI = 'summary_page.cgi'
-	driver.find_element_by_partial_link_text("Genome Statistics").click() 
+	driver.find_element_by_partial_link_text("Genome Statistics").click(), time.sleep(5)
 	expectedList = ["24.8%","25.7%","24.9%","24.6%","Genome Summary",
 			"1100","tRNA","5245125 bp"]
-	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 
 ######### Go to RNA display page
 	currentCGI = 'display_feature.cgi'
-	driver.find_element_by_partial_link_text('tRNA').click() 
-	time.sleep(5) # let page load
+	driver.find_element_by_partial_link_text('tRNA').click(), time.sleep(5)
 	expectedList = ["VAC_171","VAC_5307","tRNA-Pro","VAC.pseudomolecule.1"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
@@ -113,28 +113,25 @@ def main():
 
 ######### Go to Role Category Breakdown
 	currentCGI = 'roleid_breakdown.cgi'
-	driver.find_element_by_partial_link_text("Role Category Breakdown").click() 
+	driver.find_element_by_partial_link_text("Role Category Breakdown").click(), time.sleep(5)
 	expectedList = ["703","Transposon functions","Chemotaxis and motility",
 			"Role category not yet assigned","Chlorophyll",
 			"Hypothetical proteins","94"]
-	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Go to overlap summary
 	currentCGI = 'overlap_summary.cgi'
-	driver.find_element_by_partial_link_text("Overlap Summary").click() 
+	driver.find_element_by_partial_link_text("Overlap Summary").click(), time.sleep(5)
 	expectedList = ["VAC_148","170895","171202","44 nucleotides","VAC_150","171040","171202",
 			"VAC_5210","5173634","5174493","35 nucleotides","VAC_5211","5174340","5174493"]
-	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 
 ######### Go to GCP from overlap summary
-	driver.find_element_by_partial_link_text("VAC_148").click() 
+	driver.find_element_by_partial_link_text("VAC_148").click(), time.sleep(10)
 	expectedList = ["VAC_148","171084","170896","62","None assigned","BER SKIM"]
-	time.sleep(10)
 	overlap_window = driver.window_handles[0]
 	gcp_window = driver.window_handles[1]
 	driver.switch_to_window(gcp_window)
@@ -149,11 +146,10 @@ def main():
 	gatewayForm = driver.find_element_by_name('form1')
 	dbBox = driver.find_element_by_name('orf')
 	dbBox.send_keys('VAC_241')
-	gatewayForm.submit()
+	gatewayForm.submit(), time.sleep(5)
 	expectedList = ["VAC_241","end5/end3:","550","undecaprenyl phosphate","GO:0016763","Cellular processes",
 			"Start confidence not calculated","Frameshift Name","EVIDENCE PICTURE","PF02366.13",
 			"COG1807","No prosite data available","0.209","0.365","CHARACTERIZED MATCH","UniRef100_B1X8X0"]
-	time.sleep(5)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -163,21 +159,19 @@ def main():
 	gatewayForm = driver.find_element_by_name('form1')
 	dbBox = driver.find_element_by_name('new_db')
 	dbBox.send_keys('abau')
-	gatewayForm.submit()
+	gatewayForm.submit(), time.sleep(2)
 	expectedList = ["Acinetobacter baumannii ATCC 17978"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'change db')
-	time.sleep(2)
 
 ######### Revert to test db
 	gatewayForm = driver.find_element_by_name('form1')
 	dbBox = driver.find_element_by_name('new_db')
 	dbBox.send_keys('VAC_test')
-	gatewayForm.submit()
+	gatewayForm.submit(), time.sleep(2)
 	expectedList = ["Escherichia coli VAC1"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'change db back')
-	time.sleep(2)
 
 ######### Run BLASTN
 	currentCGI = 'perform_blast.cgi'
@@ -199,10 +193,9 @@ def main():
 		'CCCTGGGGACTGGCGATAGCGCAGCGGGAGCCTGACTTCTGGCATTATTTTTTCTGGGTT'
 				'')
 	time.sleep(4)
-	gatewayForm.submit()
+	gatewayForm.submit(), time.sleep(10) # let BLASTN run
 	expectedList = ["(720 letters)","VAC_241","1427","VAC_2870","VAC_1732",
 			"4,590,078","(28.2 bits)","Effective search space: 3172774528"]
-	time.sleep(10) # let the BLASTN run
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'BLASTN')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -217,10 +210,9 @@ def main():
 		'LPTTKQRY'
 				'')
 	time.sleep(4)
-	gatewayForm.submit()
+	gatewayForm.submit(), time.sleep(10) # let BLAST run
 	expectedList = ["(128 letters)","VAC_244","192","6e-51","VAC_3061",
 			"1,139,576","(22.7 bits)","Effective search space: 61537104"]
-	time.sleep(10) # let BLAST run
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'BLASTP')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -240,10 +232,9 @@ def main():
 		'PVRWLTLPPELKNGGIKISRQALKEWVQRQQ'
 				'')
 	time.sleep(4)
-	gatewayForm.submit()
+	gatewayForm.submit(), time.sleep(10) # let TBLASTN run
 	expectedList = ["(451 letters)","VAC.pseudomolecule.1","866","0.0",
 			"1,748,284","(26.2 bits)","Effective search space: 629382240"]
-	time.sleep(10) # let BLAST run
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'TBLASTN')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -256,78 +247,69 @@ def main():
 	gatewayForm = driver.find_element_by_name('form1')
 	dbBox = driver.find_element_by_name('new_db')
 	dbBox.send_keys('VAC1_test2')
-	gatewayForm.submit()
-	time.sleep(2)
+	gatewayForm.submit(), time.sleep(2)
 
 	##########################################
 	########## TESTING FN = DUMPERS ##########
 	##########################################
 
+	# Overestimate dumper time to ensure it completes
+	# Find the most recent DL of this particular file and compare to reference
+
 	pathToDataDumps = '/Users/jmatsumura/Downloads/VAC1_test2'
 		
 ######### GO Annotation
 	currentCGI = 'nucleotide_dumper.cgi'
-	driver.find_element_by_partial_link_text('GO Annotation').click() 
-	time.sleep(180) # Overestimate dumper time to ensure it completes
-
-	# Find the most recent dl of this particular file and compare to reference
+	driver.find_element_by_partial_link_text('GO Annotation').click(), time.sleep(180)
 	result = compare_dl_files('GO_annotation.txt')
 	log_results(currentCGI, result, fileName, 'GO dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Annotation
 	# need to handle this a little differently to avoid clicking GO Annotation
-	driver.find_element_by_id('just_annotation').click() 
-	time.sleep(120) 
+	driver.find_element_by_id('just_annotation').click(), time.sleep(120)
 	result = compare_dl_files('annotation.txt')
 	log_results(currentCGI, result, fileName, 'Annotation dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Coords
-	driver.find_element_by_partial_link_text('Gene Coordinates').click() 
-	time.sleep(40) 
+	driver.find_element_by_partial_link_text('Gene Coordinates').click(), time.sleep(40)
 	result = compare_dl_files('coord.txt')
 	log_results(currentCGI, result, fileName, 'Coords dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Nucleotides
-	driver.find_element_by_partial_link_text('Gene Nucleotide Sequence').click() 
-	time.sleep(40) 
+	driver.find_element_by_partial_link_text('Gene Nucleotide Sequence').click(), time.sleep(40) 
 	result = compare_dl_files('nucleotide_multifasta_seq.fsa')
 	log_results(currentCGI, result, fileName, 'Nucleotide dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Protein seqs
-	driver.find_element_by_partial_link_text('Protein Sequence').click() 
-	time.sleep(40) 
+	driver.find_element_by_partial_link_text('Protein Sequence').click(), time.sleep(40)
 	result = compare_dl_files('protein_multifasta_seq.fsa')
 	log_results(currentCGI, result, fileName, 'Protein dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Whole Genome
-	driver.find_element_by_partial_link_text('Whole Genome Nucleotide Sequence').click() 
-	time.sleep(40) 
+	driver.find_element_by_partial_link_text('Whole Genome Nucleotide Sequence').click(), time.sleep(40)
 	result = compare_dl_files('whole_genome.txt')
 	log_results(currentCGI, result, fileName, 'Whole genome')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### GenBank
-	driver.find_element_by_partial_link_text('GenBank Format').click() 
-	time.sleep(120) 
+	driver.find_element_by_partial_link_text('GenBank Format').click(), time.sleep(120)
 	result = compare_dl_files('gbk')
 	log_results(currentCGI, result, fileName, 'GenBank')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### GFF3
-	driver.find_element_by_partial_link_text('GFF3 Format').click() 
-	time.sleep(120) 
+	driver.find_element_by_partial_link_text('GFF3 Format').click(), time.sleep(120)
 	result = compare_dl_files('gff3')
 	log_results(currentCGI, result, fileName, 'GFF3')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### TBL
-	driver.find_element_by_partial_link_text('TBL Format').click() 
-	time.sleep(120) 
+	driver.find_element_by_partial_link_text('TBL Format').click(), time.sleep(120)
 	result = compare_dl_files('tbl')
 	log_results(currentCGI, result, fileName, 'TBL')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -342,15 +324,13 @@ def main():
 	gatewayForm = driver.find_element_by_name('form1')
 	dbBox = driver.find_element_by_name('new_db')
 	dbBox.send_keys('VAC_test')
-	gatewayForm.submit()
-	time.sleep(2)
+	gatewayForm.submit(), time.sleep(2)
 
 	currentCGI = 'ORF_infopage.cgi'
 	gatewayForm = driver.find_element_by_name('form1')
 	dbBox = driver.find_element_by_name('orf')
 	dbBox.send_keys('VAC_241')
-	gatewayForm.submit()
-	time.sleep(5)
+	gatewayForm.submit(), time.sleep(5)
 
 	# For those pages which open new windows, handle using window_handles
 	gateway_window = driver.window_handles[0]
@@ -359,8 +339,7 @@ def main():
 	### TESTING PAGE = GC_Skew_Display.cgi ###
 	##########################################
 	currentCGI = 'GC_Skew_Display.cgi'
-	driver.find_element_by_css_selector('#gcskew').click()
-	time.sleep(10)
+	driver.find_element_by_css_selector('#gcskew').click(), time.sleep(10)
 	gcskew_window = driver.window_handles[1]
 	driver.switch_to_window(gcskew_window)
 	expectedList = ["Extended off end5: 600","Frame"]
@@ -375,23 +354,23 @@ def main():
 	for x in range(0,3):
 		ext3.send_keys(Keys.BACKSPACE) 
 	ext3.send_keys("850")
-	driver.find_element_by_css_selector('.redraw').click()
-	time.sleep(3)
+	driver.find_element_by_css_selector('.redraw').click(), time.sleep(3)
 	expectedList = ["Extended off end5: 700","Extended off end3: 850"] 
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'redraw')
 	driver.close()
 
 	driver.switch_to_window(gateway_window)
-	time.sleep(3)
 
 ######### Make sure sequence data can be displayed
-	driver.find_element_by_css_selector('#viewsequence').click()
-	time.sleep(8)
+	driver.find_element_by_css_selector('#viewsequence').click(), time.sleep(8)
 	seqdisplay_window = driver.window_handles[1]
 	driver.switch_to_window(seqdisplay_window)
 	expectedList = ["1653 nucleotides","550 amino acids", 
-			"ATGAAATCGGTACGTTACCTTATCGGCCTCTTCGCATTTATTGCCTGCTATTACCTGTTA"]
+			"ATGAAATCGGTACGTTACCTTATCGGCCTCTTCGCATTTATTGCCTGCTATTACCTGTTA",
+			"CGTCTGGTGCTAATTCAGTATCGGCCCAAATGA",
+			"MKSVRYLIGLFAFIACYYLLPISTRLLWQPDETRYAEISREMLASGDWIVPHLLGLRYFE",
+			"RLVLIQYRPK"]
 	result = verify_results(expectedList)	
 	log_results('seq_display.cgi', result, fileName, 'load')
 	driver.close()
@@ -403,24 +382,18 @@ def main():
 
 ######## Test the links within the btab display
 	currentCGI = 'btab_display.cgi'
-	driver.find_element_by_partial_link_text('View BER Searches').click() 
-	time.sleep(5) # let page load
-
+	driver.find_element_by_partial_link_text('View BER Searches').click(), time.sleep(5)
 	ber_window = driver.window_handles[1]
 	driver.switch_to_window(ber_window)
-	
 	expectedList = ["UniRef100_B1X8X0","UniRef100_D7ZXT5","VAC.CDS.9803630974.1", 
 			"VAC.CDS.9803630974.1","%Identity = 98.7","%Similarity = 99.5"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'BER Searches Display')
 
 ######## TESTING LINK = UniRef #######
-	driver.find_element_by_partial_link_text('UniRef100_B1X8X0').click() 
-	time.sleep(10)
-
+	driver.find_element_by_partial_link_text('UniRef100_B1X8X0').click(), time.sleep(10)
 	uniref_window = driver.window_handles[2]
 	driver.switch_to_window(uniref_window)
-
 	expectedList = ["Undecaprenyl phosphate-alpha","ARNT_ECODH",
 			"UniProt","UniRef100_B1X8X0"]
 	result = verify_results(expectedList)	
@@ -436,8 +409,7 @@ def main():
 
 	currentCGI = 'ORF_infopage.cgi'
 ######## TESTING LINK = ExPASy #######
-	driver.find_element_by_partial_link_text('EC number(s)').click() 
-	time.sleep(20)
+	driver.find_element_by_partial_link_text('EC number(s)').click(), time.sleep(20)
 	expasy_window = driver.window_handles[1]
 	driver.switch_to_window(expasy_window)
 	expectedList = ["Lipid IV(A) 4-amino-4-deoxy-L-arabinosyltransferase",
@@ -448,8 +420,7 @@ def main():
 	driver.switch_to_window(gateway_window)
 	
 ######## TESTING LINK = Gene Ontology #######
-	driver.find_element_by_partial_link_text('GO:0009103').click() 
-	time.sleep(20)
+	driver.find_element_by_partial_link_text('GO:0009103').click(), time.sleep(20)
 	amigo_window = driver.window_handles[1]
 	driver.switch_to_window(amigo_window)
 	expectedList = ["lipopolysaccharide biosynthetic process",
@@ -460,8 +431,7 @@ def main():
 	driver.switch_to_window(gateway_window)
 
 ######## TESTING LINK = AmiGO Search #######
-	driver.find_element_by_partial_link_text('Search AmiGO').click() 
-	time.sleep(20)
+	driver.find_element_by_partial_link_text('Search AmiGO').click(), time.sleep(20)
 	amigo2_window = driver.window_handles[1]
 	driver.switch_to_window(amigo2_window)
 	expectedList = ["AmiGO 2"] # Cautious about what will change on the site
@@ -471,8 +441,7 @@ def main():
 	driver.switch_to_window(gateway_window)
 
 ######## TESTING LINK = Gene Ontology Evidence #######
-	driver.find_element_by_partial_link_text('IEA').click() 
-	time.sleep(20)
+	driver.find_element_by_partial_link_text('IEA').click(), time.sleep(20)
 	geneOntology_window = driver.window_handles[1]
 	driver.switch_to_window(geneOntology_window)
 	expectedList = ["Inferred from Electronic Annotation (IEA)",
@@ -483,8 +452,7 @@ def main():
 	driver.switch_to_window(gateway_window)
 
 ######## TESTING LINK = Pfam #######
-	driver.find_element_by_partial_link_text('PF13231.1').click() 
-	time.sleep(20)
+	driver.find_element_by_partial_link_text('PF13231.1').click(), time.sleep(20)
 	pfam_window = driver.window_handles[1]
 	driver.switch_to_window(pfam_window)
 	expectedList = ["Dolichyl-phosphate-mannose-protein mannosyltransferase",
@@ -495,8 +463,7 @@ def main():
 	driver.switch_to_window(gateway_window)
 
 ######## TESTING LINK = COG #######
-	driver.find_element_by_partial_link_text('COG1807').click() 
-	time.sleep(20)
+	driver.find_element_by_partial_link_text('COG1807').click(), time.sleep(20)
 	cog_window = driver.window_handles[1]
 	driver.switch_to_window(cog_window)
 	expectedList = ["4-amino-4-deoxy-L-arabinose transferase or related glycosyltransferase",
@@ -511,8 +478,7 @@ def main():
 	##########################################
 
 	currentCGI = 'sigp_display.cgi'
-	driver.find_element_by_partial_link_text('Graphical Display').click() 
-	time.sleep(8)
+	driver.find_element_by_partial_link_text('Graphical Display').click(), time.sleep(8)
 	sigp_window = driver.window_handles[1]
 	driver.switch_to_window(sigp_window)
 	expectedList = ["VAC.transcript.9803630972.1",
@@ -521,8 +487,7 @@ def main():
 	log_results(currentCGI, result, fileName, 'SigP graphical output')
 
 ######## Make sure SigP output can be downloaded
-	driver.find_element_by_partial_link_text('here').click() 
-	time.sleep(10)
+	driver.find_element_by_partial_link_text('here').click(), time.sleep(10)
 	result = compare_dl_files('sigp')
 	log_results(currentCGI, result, fileName, 'SigP Download')
 
@@ -539,8 +504,7 @@ def main():
         	break
 
 	sigpForm = driver.find_element_by_name('submit')
-	sigpForm.submit()
-	time.sleep(10)
+	sigpForm.submit(), time.sleep(10)
 	expectedList = ["VAC.transcript.9803630972.1",
 			"Please configure the options below","Download raw SignalP"]
 	result = verify_results(expectedList)	
@@ -560,8 +524,7 @@ def main():
 	delRole = driver.find_element_by_name('del_role')
 	addRole.send_keys("102")
 	delRole.send_keys("703")
-	driver.find_element_by_partial_link_text("submit").click() 
-	time.sleep(5)
+	driver.find_element_by_partial_link_text("submit").click(), time.sleep(5)
 	expectedList = ["The role_link table has been updated","VAC_5315",
 			"1280","102","Central intermediary metabolism","Other"]
 	result = verify_results(expectedList)	
@@ -574,14 +537,12 @@ def main():
 	delRole = driver.find_element_by_name('del_role')
 	addRole.send_keys("703")
 	delRole.send_keys("102")
-	driver.find_element_by_partial_link_text("submit").click() 
-	time.sleep(5) # allot time for update
+	driver.find_element_by_partial_link_text("submit").click(), time.sleep(5)
 
 ######## Make sure Gene Identification panel can be updated.
 	geneBox = driver.find_element_by_name('edit_gene_sym')
 	geneBox.send_keys('tesT123')
-	driver.find_element_by_partial_link_text("submit").click() 
-	time.sleep(5)
+	driver.find_element_by_partial_link_text("submit").click(), time.sleep(5)
 	expectedList = ["Annotation has been updated","tesT123"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'Gene Identification Panel')
@@ -590,8 +551,7 @@ def main():
 	geneBox = driver.find_element_by_name('edit_gene_sym')
 	for x in range(0,8):
 		geneBox.send_keys(Keys.BACKSPACE) 
-	driver.find_element_by_partial_link_text("submit").click() 
-	time.sleep(5)
+	driver.find_element_by_partial_link_text("submit").click(), time.sleep(5)
 
 	driver.find_element_by_partial_link_text("Home").click() 
 
@@ -604,8 +564,7 @@ def main():
 ######## Check all categories, ordered by role category
 	currentCGI = 'submit_begin_all.cgi'
 	sbForm = driver.find_element_by_name('form1')
-	sbForm.submit()	
-	time.sleep(12)
+	sbForm.submit(), time.sleep(12)
 	expectedList = ["All categories","Viral functions","other roles","VAC_767",
 			"1293565","3-deoxy-7-phosphoheptulonate synthase","VAC_1557"]
 	result = verify_results(expectedList)	
@@ -619,8 +578,7 @@ def main():
         	option.click() 
         	break
 	sbForm = driver.find_element_by_name('form1')
-	sbForm.submit()	
-	time.sleep(12)
+	sbForm.submit(), time.sleep(12)
 	expectedList = ["All categories","Viral functions","other roles","VAC_523","850048",
 			"5'-3' exonuclease, C-terminal SAM fold family protein","VAC_2367"]
 	result = verify_results(expectedList)	
@@ -631,11 +589,9 @@ def main():
 	roleIdBox = driver.find_element_by_name('role_id')
 	for x in range(0,7): # there must be a better way!
 		roleIdBox.send_keys(Keys.BACKSPACE) 
-	roleIdBox.send_keys("93")
-	time.sleep(3)
+	roleIdBox.send_keys("93"), time.sleep(3)
 	sbForm = driver.find_element_by_name('form1')
-	sbForm.submit()	
-	time.sleep(12)
+	sbForm.submit(), time.sleep(12)
 	expectedList = ["All categories","Viral functions","other roles","VAC_384","416094",
 			"septum site-determining protein MinD","VAC_2621"]
 	result = verify_results(expectedList)	
@@ -649,8 +605,7 @@ def main():
 	end5.send_keys("1000")
 	end3.send_keys("5000")
 	sbForm = driver.find_element_by_name('form1')
-	sbForm.submit()	
-	time.sleep(12)
+	sbForm.submit(), time.sleep(12)
 	expectedList = ["VAC.pseudomolecule.1","VAC_4","VAC_5","VAC_6","gene name",
 			"UDP-glucose 6-dehydrogenase","VAC_3","2746","1.1.1.44"]
 	result = verify_results(expectedList)	
@@ -659,11 +614,10 @@ def main():
 
 ######### Go to Role Category Breakdown (need to make sure link works from this page) 
 	currentCGI = 'roleid_breakdown.cgi'
-	driver.find_element_by_partial_link_text("ROLE CATEGORY BREAKDOWN").click() 
+	driver.find_element_by_partial_link_text("ROLE CATEGORY BREAKDOWN").click(), time.sleep(10)
 	expectedList = ["703","Transposon functions","Chemotaxis and motility",
 			"Role category not yet assigned","Chlorophyll",
 			"Hypothetical proteins","94"]
-	time.sleep(10)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.execute_script("window.history.go(-1)")  
@@ -672,10 +626,9 @@ def main():
 	## THIS IS A PLACE HOLDER LIST UNTIL THE FILES ARE LOADED FOR PRODUCTION ##
 ######### Go to Interevidence Search 
 	currentCGI = 'interevidence_search.cgi'
-	driver.find_element_by_partial_link_text("INTEREVIDENCE SEARCH RESULTS").click() 
+	driver.find_element_by_partial_link_text("INTEREVIDENCE SEARCH RESULTS").click(), time.sleep(20)
 	expectedList = ["Escherichia coli 4_1","100.0",
 			"Fimbrial protein","94.4"]
-	time.sleep(20)
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
 	driver.find_element_by_partial_link_text("SEARCH AGAIN").click() 
@@ -691,8 +644,7 @@ def main():
 	queryBox = driver.find_element_by_name('queryWord')
 	queryBox.send_keys('2.1')
 	sbForm = driver.find_element_by_name('form1')
-	sbForm.submit()	
-	time.sleep(10)
+	sbForm.submit(), time.sleep(10)
 	expectedList = ["VAC_106","VAC_2850","2932255","uraH",
 			"2.1.1.-","argininosuccinate lyase","transaldolase"]
 	result = verify_results(expectedList)	
@@ -720,22 +672,69 @@ def main():
 	queryBox = driver.find_element_by_name('inp2')
 	queryBox.send_keys('GO:0004417')
 	sbForm = driver.find_element_by_name('form1')
-	sbForm.submit()	
-	time.sleep(10)
+	sbForm.submit(), time.sleep(10)
 	expectedList = ["VAC_78","91858","kinase","contains",
 			"120","103","1"]
 	result = verify_results(expectedList)	
 	log_results(currentCGI, result, fileName, 'load')
-	driver.find_element_by_partial_link_text("Home").click() 
+	driver.find_element_by_partial_link_text("Home").click(), time.sleep(5)
 
 ##########################################
 ### TESTING SUITE = genome_viewer.cgi ####
 ##########################################
+# Since this page is primarily built as a graphical interface, the way
+# these tests will be performed will be a bit different. ActionChains
+# will be created which simulate, step by step, the mouse and click movements
+# that a user would use in order to do actions like insertions, deletions,
+# changing starts/stops, and merging genes. 
+#
+# The pixel positions here are extremely finicky, must use VAC_test to 
+# maintain consistency of positions for the gene graphics. 
+
+	currentCGI = 'genome_viewer.cgi'
+	gv_link = driver.find_element_by_partial_link_text("Genome Viewer")
+	ActionChains(driver).key_down(Keys.COMMAND).move_to_element(gv_link).click().key_up(Keys.COMMAND).perform(), time.sleep(20)
+	gateway_window = driver.window_handles[0] # need to perform verifications of GV changes through GCP
+	gv_window = driver.window_handles[1]
+	driver.switch_to_window(gv_window)
+
+######### Check gene insertion 
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 70,85
+	actions = ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(1)
+	driver.find_element_by_partial_link_text("Edit").click(), time.sleep(10)
+	x,y = 29,173
+	actions = ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(1)
+	driver.find_element_by_partial_link_text("Insert").click(), time.sleep(2)
+	driver.find_element_by_css_selector('#insert_orf_submit').click(), time.sleep(2)
+	alert = driver.switch_to_alert()
+	alert.accept(), time.sleep(20)
+
+######### Check gene deletion 
+	driver.find_element_by_css_selector('#VAC_5').click(), time.sleep(5) # reposition
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 26,-32
+	actions = ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
+	driver.find_element_by_partial_link_text("Delete").click(), time.sleep(2)
+	alert = driver.switch_to_alert()
+	alert.accept(), time.sleep(20)
+	driver.close()
+	driver.switch_to_window(gateway_window)
+	driver.close()
+
+	'''
+	for i in range(0,200):
+		x = randint(20,30)
+		y = 85-i
+		vac3 = driver.find_element_by_css_selector('#gene_image')
+		actions = ActionChains(driver).move_to_element(vac3).move_by_offset(x,y).click().perform()
+		time.sleep(1)
+		print("{}, {}, {}".format(i,x,y))
+	'''
 
 ############################
 ########## DONE ############
 ############################
-	time.sleep(10) # hang a bit before the end
 	driver.quit()
 
 ###################################
