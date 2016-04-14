@@ -30,6 +30,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import NoSuchElementException
 
 # Generate a new log filename with a random ID
 fileName = '/tmp/manateeAutoDebug.' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) 
@@ -50,8 +51,8 @@ def main():
 
 	driver.get(pathToManatee)
 
-	driver.set_window_size(1300,1100)
 	driver.set_window_position(0,0)
+	driver.set_window_size(1100,900)
 
 	expectedList = ["user_name","password","database"]
 	result = verify_results(expectedList)	
@@ -688,9 +689,8 @@ def main():
 # that a user would use in order to do actions like insertions, deletions,
 # changing starts/stops, and merging genes. 
 #
-# The pixel positions here are extremely finicky, must use VAC_test to 
-# maintain consistency of positions for the gene graphics. 
-
+# The pixel positions here are extremely finicky, must use VAC_test (or VAC1_test2) 
+# to maintain consistency of positions for the gene graphics. 
 	currentCGI = 'genome_viewer.cgi'
 	gv_link = driver.find_element_by_partial_link_text("Genome Viewer")
 	ActionChains(driver).key_down(Keys.COMMAND).move_to_element(gv_link).click().key_up(Keys.COMMAND).perform(), time.sleep(20)
@@ -701,36 +701,149 @@ def main():
 ######### Check gene insertion 
 	gene_img = driver.find_element_by_css_selector('#gene_image')
 	x,y = 70,85
-	actions = ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(1)
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
 	driver.find_element_by_partial_link_text("Edit").click(), time.sleep(10)
 	x,y = 29,173
-	actions = ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(1)
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
 	driver.find_element_by_partial_link_text("Insert").click(), time.sleep(2)
 	driver.find_element_by_css_selector('#insert_orf_submit').click(), time.sleep(2)
 	alert = driver.switch_to_alert()
 	alert.accept(), time.sleep(20)
+	result = gvCheck('#gene_image')	
+	log_results(currentCGI, result, fileName, 'insert gene')
+
+######### Check merge genes, first have to insert another gene
+	driver.find_element_by_css_selector('#VAC_5').click(), time.sleep(5) # reposition
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 70,85
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
+	driver.find_element_by_partial_link_text("Edit").click(), time.sleep(10)
+	x,y = -2,173
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
+	driver.find_element_by_partial_link_text("Insert").click(), time.sleep(2)
+	driver.find_element_by_css_selector('#insert_orf_submit').click(), time.sleep(2)
+	alert = driver.switch_to_alert()
+	alert.accept(), time.sleep(20)
+	result = gvCheck('#gene_image')	
+	log_results(currentCGI, result, fileName, 'insert gene round 2')
+
+	# Two genes have been inserted, now merge
+	driver.find_element_by_css_selector('#VAC_5').click(), time.sleep(5) # reposition
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 26,-32
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
+	driver.find_element_by_partial_link_text("merge").click(), time.sleep(2)
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = -4,-32
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
+	driver.find_element_by_partial_link_text("merge").click(), time.sleep(2)
+	driver.find_element_by_css_selector("#mergeButton").click(), time.sleep(25)
+	result = gvCheck('#gene_image')	
+	log_results(currentCGI, result, fileName, 'merge genes')
 
 ######### Check gene deletion 
 	driver.find_element_by_css_selector('#VAC_5').click(), time.sleep(5) # reposition
 	gene_img = driver.find_element_by_css_selector('#gene_image')
-	x,y = 26,-32
-	actions = ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
+	x,y = 26,-5
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(2)
 	driver.find_element_by_partial_link_text("Delete").click(), time.sleep(2)
 	alert = driver.switch_to_alert()
 	alert.accept(), time.sleep(20)
+	result = gvCheck('#gene_image')	
+	log_results(currentCGI, result, fileName, 'delete gene')
+	
+######### Check update stop site
+	driver.find_element_by_css_selector('#VAC_5').click(), time.sleep(5) # reposition
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 70,85
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(3)
+	driver.find_element_by_partial_link_text("Edit").click(), time.sleep(20)
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 70,660
+	seq_display = driver.find_element_by_css_selector('#seq_display')
+	ActionChains(driver).move_to_element(seq_display).click().perform(), time.sleep(2)
+	for i in range(0,191): # scroll to correct position
+		ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
+		time.sleep(.1)
+	x,y = 23,18 # stop AA 
+	time.sleep(1) 
+	ActionChains(driver).move_to_element(seq_display).move_by_offset(x,y).click().perform(), time.sleep(3)
+	driver.find_element_by_partial_link_text("Move Stop Site Here").click(), time.sleep(8)
+	stop_confirm_window = driver.window_handles[2]
+	driver.switch_to_window(stop_confirm_window)
+	driver.find_element_by_css_selector('.startStopConfirm').click(), time.sleep(20)
+	
+	# Stop site has been "moved" (although to same position) and now needs to be verified in GCP
+	driver.switch_to_window(gateway_window)
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('orf')
+	dbBox.send_keys('VAC_6')
+	gatewayForm.submit(), time.sleep(5)
+	expectedList = ["VAC_6","end5/end3:","6117","4909","402","1209"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'move stop -- coords check')
+	driver.find_element_by_css_selector('#viewsequence').click(), time.sleep(8)
+	seqdisplay_window = driver.window_handles[2]
+	driver.switch_to_window(seqdisplay_window)
+	expectedList = ["1209 nucleotides","402 amino acids", 
+			"ATGAAACTTGCATTAATCATTGATGATTATTTGCCCCATAGCACACGCGTTGGGGCTAAA",
+			"TGCGTTTAG",
+			"MKLALIIDDYLPHSTRVGAKMFHELGLELLSRGHDVTVITPDISLQAIYSISMIDGIKVW",
+			"LLSDSVLRKQLGQNANVLLKSQFSVESAAHTIEVRLEAGECV"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'move stop -- seq check')
+	driver.close()
+	driver.switch_to_window(gv_window)
+
+######### Check update start site
+	# While this is very similar to the last block, instead of making a function 
+	# out of these two, keep them separate for more customizable checks later.
+	driver.find_element_by_css_selector('#VAC_5').click(), time.sleep(5) # reposition
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 70,85
+	ActionChains(driver).move_to_element(gene_img).move_by_offset(x,y).click().perform(), time.sleep(3)
+	driver.find_element_by_partial_link_text("Edit").click(), time.sleep(20)
+	gene_img = driver.find_element_by_css_selector('#gene_image')
+	x,y = 70,660
+	seq_display = driver.find_element_by_css_selector('#seq_display')
+	ActionChains(driver).move_to_element(seq_display).click().perform(), time.sleep(2)
+	for i in range(0,455): # scroll to correct position
+		ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
+		time.sleep(.1)
+	x,y = 290,18 # start AA 
+	time.sleep(1) 
+	ActionChains(driver).move_to_element(seq_display).move_by_offset(x,y).click().perform(), time.sleep(3)
+	driver.find_element_by_partial_link_text("Move Start Site Here").click(), time.sleep(8)
+	stop_confirm_window = driver.window_handles[2]
+	driver.switch_to_window(stop_confirm_window)
+	driver.find_element_by_css_selector('.startStopConfirm').click(), time.sleep(20)
+
+	# Start site has been "moved" (although to same position) and now needs to be verified in GCP
+	driver.switch_to_window(gateway_window)
+	gatewayForm = driver.find_element_by_name('form1')
+	dbBox = driver.find_element_by_name('orf')
+	dbBox.send_keys('VAC_6')
+	gatewayForm.submit(), time.sleep(5)
+	expectedList = ["VAC_6","end5/end3:","6117","4909","402","1209"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'move start -- coords check')
+	driver.find_element_by_css_selector('#viewsequence').click(), time.sleep(8)
+	seqdisplay_window = driver.window_handles[2]
+	driver.switch_to_window(seqdisplay_window)
+	expectedList = ["1209 nucleotides","402 amino acids", 
+			"ATGAAACTTGCATTAATCATTGATGATTATTTGCCCCATAGCACACGCGTTGGGGCTAAA",
+			"TGCGTTTAG",
+			"MKLALIIDDYLPHSTRVGAKMFHELGLELLSRGHDVTVITPDISLQAIYSISMIDGIKVW",
+			"LLSDSVLRKQLGQNANVLLKSQFSVESAAHTIEVRLEAGECV"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'move start -- seq check')
+	driver.close()
+	driver.switch_to_window(gv_window)
+
+	time.sleep(5)
+
 	driver.close()
 	driver.switch_to_window(gateway_window)
-	driver.close()
-
-	'''
-	for i in range(0,200):
-		x = randint(20,30)
-		y = 85-i
-		vac3 = driver.find_element_by_css_selector('#gene_image')
-		actions = ActionChains(driver).move_to_element(vac3).move_by_offset(x,y).click().perform()
-		time.sleep(1)
-		print("{}, {}, {}".format(i,x,y))
-	'''
 
 ############################
 ########## DONE ############
@@ -777,6 +890,16 @@ def notFoundInPage(text):
 		assert text not in driver.page_source
 	except:
 		result = 'FAILED' # if found in page, fail
+	return result
+
+# Function to check that proper elements are appearing in Genome Viewer.
+def gvCheck(text):
+	
+	result = 'OK'
+	try:
+		driver.find_element_by_css_selector(text)
+	except NoSuchElementException:
+		result = 'FAILED' # if not in page, fail
 	return result
 
 # This function is used to check for all expected text on a 
