@@ -19,7 +19,7 @@
 # body that start at the left end of the page with hashmarks detail a
 # specific component of the page that is being tested.  
 #
-# HOWTO: (python) first.py http://path/to/manatee/site/login username password db
+# HOWTO: (python) manatee_crawler.py http://path/to/manatee/site/login username password db
 # The standard version of this script is verifying data within the db VAC_test.
 #
 # Author: James Matsumura
@@ -67,7 +67,7 @@ def main():
 	pwBox.send_keys(password)
 	dbBox.send_keys(db)
 	loginForm.submit(), time.sleep(5) # using time.sleep is not optimal, but works best for Manatee's setup
-
+	
 ######### Test that the login successfully went through. 
 	expectedList = ["ACCESS LISTINGS","ACCESS GENE CURATION PAGE",
 			"CHANGE ORGANISM DATABASE", "Data file downloads"]
@@ -260,57 +260,57 @@ def main():
 	pathToDataDumps = '/Users/jmatsumura/Downloads/VAC1_test2'
 		
 ######### GO Annotation
-	currentCGI = 'nucleotide_dumper.cgi'
-	driver.find_element_by_partial_link_text('GO Annotation').click(), time.sleep(180)
-	result = compare_dl_files('GO_annotation.txt')
-	log_results(currentCGI, result, fileName, 'GO dumper')
-	driver.find_element_by_partial_link_text("Home").click() 
+	#currentCGI = 'nucleotide_dumper.cgi'
+	#driver.find_element_by_partial_link_text('GO Annotation').click(), time.sleep(240)
+	#result = compare_dl_files('GO_annotation.txt')
+	#log_results(currentCGI, result, fileName, 'GO dumper')
+	#driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Annotation
 	# need to handle this a little differently to avoid clicking GO Annotation
-	driver.find_element_by_id('just_annotation').click(), time.sleep(120)
+	driver.find_element_by_id('just_annotation').click(), time.sleep(180)
 	result = compare_dl_files('annotation.txt')
 	log_results(currentCGI, result, fileName, 'Annotation dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Coords
-	driver.find_element_by_partial_link_text('Gene Coordinates').click(), time.sleep(40)
+	driver.find_element_by_partial_link_text('Gene Coordinates').click(), time.sleep(60)
 	result = compare_dl_files('coord.txt')
 	log_results(currentCGI, result, fileName, 'Coords dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Nucleotides
-	driver.find_element_by_partial_link_text('Gene Nucleotide Sequence').click(), time.sleep(40) 
+	driver.find_element_by_partial_link_text('Gene Nucleotide Sequence').click(), time.sleep(60) 
 	result = compare_dl_files('nucleotide_multifasta_seq.fsa')
 	log_results(currentCGI, result, fileName, 'Nucleotide dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Protein seqs
-	driver.find_element_by_partial_link_text('Protein Sequence').click(), time.sleep(40)
+	driver.find_element_by_partial_link_text('Protein Sequence').click(), time.sleep(60)
 	result = compare_dl_files('protein_multifasta_seq.fsa')
 	log_results(currentCGI, result, fileName, 'Protein dumper')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### Whole Genome
-	driver.find_element_by_partial_link_text('Whole Genome Nucleotide Sequence').click(), time.sleep(40)
+	driver.find_element_by_partial_link_text('Whole Genome Nucleotide Sequence').click(), time.sleep(60)
 	result = compare_dl_files('whole_genome.txt')
 	log_results(currentCGI, result, fileName, 'Whole genome')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### GenBank
-	driver.find_element_by_partial_link_text('GenBank Format').click(), time.sleep(120)
+	driver.find_element_by_partial_link_text('GenBank Format').click(), time.sleep(180)
 	result = compare_dl_files('gbk')
 	log_results(currentCGI, result, fileName, 'GenBank')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### GFF3
-	driver.find_element_by_partial_link_text('GFF3 Format').click(), time.sleep(120)
+	driver.find_element_by_partial_link_text('GFF3 Format').click(), time.sleep(180)
 	result = compare_dl_files('gff3')
 	log_results(currentCGI, result, fileName, 'GFF3')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ######### TBL
-	driver.find_element_by_partial_link_text('TBL Format').click(), time.sleep(120)
+	driver.find_element_by_partial_link_text('TBL Format').click(), time.sleep(180)
 	result = compare_dl_files('tbl')
 	log_results(currentCGI, result, fileName, 'TBL')
 	driver.find_element_by_partial_link_text("Home").click() 
@@ -488,7 +488,7 @@ def main():
 	log_results(currentCGI, result, fileName, 'SigP graphical output')
 
 ######## Make sure SigP output can be downloaded
-	driver.find_element_by_partial_link_text('here').click(), time.sleep(10)
+	driver.find_element_by_partial_link_text('here').click(), time.sleep(20)
 	result = compare_dl_files('sigp')
 	log_results(currentCGI, result, fileName, 'SigP Download')
 
@@ -517,26 +517,26 @@ def main():
 ######## Make sure role IDs can be added and deleted.
 	gatewayForm = driver.find_element_by_name('form1')
 	dbBox = driver.find_element_by_name('orf')
-	dbBox.send_keys('VAC_5315')
+	dbBox.send_keys('VAC_5311')
 	gatewayForm.submit()
 
 	currentCGI = 'ORF_infopage.cgi'
 	addRole = driver.find_element_by_name('add_role')
 	delRole = driver.find_element_by_name('del_role')
 	addRole.send_keys("102")
-	delRole.send_keys("703")
-	driver.find_element_by_partial_link_text("submit").click(), time.sleep(5)
-	expectedList = ["The role_link table has been updated","VAC_5315",
-			"1280","102","Central intermediary metabolism","Other"]
+	delRole.send_keys("856")
+	driver.find_element_by_partial_link_text("submit").click(), time.sleep(10)
+	expectedList = ["The role_link table has been updated","VAC_5311",
+			"162","54","Central intermediary metabolism","Other"]
 	result = verify_results(expectedList)	
-	log_results(currentCGI, result, fileName, 'add role')
-	result = notFoundInPage("703")	
+	log_results(currentCGI, result, fileName, 'add role'), time.sleep(10)
+	result = notFoundInPage("Hypothetical proteins")	
 	log_results(currentCGI, result, fileName, 'delete role')
 
 	# Need to revert to earlier state for the next round of checks
 	addRole = driver.find_element_by_name('add_role')
 	delRole = driver.find_element_by_name('del_role')
-	addRole.send_keys("703")
+	addRole.send_keys("856")
 	delRole.send_keys("102")
 	driver.find_element_by_partial_link_text("submit").click(), time.sleep(5)
 
@@ -751,7 +751,12 @@ def main():
 	alert.accept(), time.sleep(20)
 	result = gvCheck('#gene_image')	
 	log_results(currentCGI, result, fileName, 'delete gene')
-	
+	currentCGI = 'genome_viewer.cgi'
+	gv_link = driver.find_element_by_partial_link_text("Genome Viewer")
+	ActionChains(driver).key_down(Keys.COMMAND).move_to_element(gv_link).click().key_up(Keys.COMMAND).perform(), time.sleep(20)
+	gateway_window = driver.window_handles[0] # need to perform verifications of GV changes through GCP
+	gv_window = driver.window_handles[1]
+	driver.switch_to_window(gv_window)
 ######### Check update stop site
 	driver.find_element_by_css_selector('#VAC_5').click(), time.sleep(5) # reposition
 	gene_img = driver.find_element_by_css_selector('#gene_image')
@@ -766,7 +771,7 @@ def main():
 		ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
 		time.sleep(.1)
 	x,y = 23,18 # stop AA 
-	time.sleep(1) 
+	time.sleep(5) 
 	ActionChains(driver).move_to_element(seq_display).move_by_offset(x,y).click().perform(), time.sleep(3)
 	driver.find_element_by_partial_link_text("Move Stop Site Here").click(), time.sleep(8)
 	stop_confirm_window = driver.window_handles[2]
@@ -811,7 +816,7 @@ def main():
 		ActionChains(driver).key_down(Keys.ARROW_RIGHT).key_up(Keys.ARROW_RIGHT).perform()
 		time.sleep(.1)
 	x,y = 290,18 # start AA 
-	time.sleep(1) 
+	time.sleep(5) 
 	ActionChains(driver).move_to_element(seq_display).move_by_offset(x,y).click().perform(), time.sleep(3)
 	driver.find_element_by_partial_link_text("Move Start Site Here").click(), time.sleep(8)
 	stop_confirm_window = driver.window_handles[2]
