@@ -10,7 +10,6 @@
 # Author: James Matsumura
 
 import time, string, random, sys, filecmp, glob, os, subprocess
-from random import randint
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -24,7 +23,7 @@ pathToManatee 	=  str(sys.argv[1]) # let the user specify which server to test
 username 	=  str(sys.argv[2]) # let the user specify username
 password 	=  str(sys.argv[3]) # let the user specify password
 db		=  str(sys.argv[4]) # let the user specify db
-driver = webdriver.Chrome()  
+driver = webdriver.Chrome() 
 
 def main():
 

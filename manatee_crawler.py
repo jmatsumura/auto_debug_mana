@@ -24,8 +24,7 @@
 #
 # Author: James Matsumura
 
-import time, string, random, sys, filecmp, glob, os, subprocess
-from random import randint
+import time, string, sys, filecmp, glob, os, subprocess, random
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
