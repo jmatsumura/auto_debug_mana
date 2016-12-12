@@ -33,9 +33,7 @@ def verify_results(listOfExpected):
                 break
         else:
             result = findInPage(x)
-		
-	return result
-
+        return result
 
 username 	=  str(sys.argv[1]) # let the user specify username
 password 	=  str(sys.argv[2]) # let the user specify password
@@ -46,10 +44,14 @@ driver.set_window_size(1100,900)
 driver.set_window_position(0,0)
 driver.get("https://manatee-preview.igs.umaryland.edu")
 
-driver.find_element_by_name('user').send_keys(username)
-driver.find_element_by_name('password').send_keys(password)
-driver.find_element_by_name('db').send_keys(db)
-driver.find_element_by_name('login_form').submit(), time.sleep(5)
+userBox = driver.find_element_by_name('user')
+pwBox = driver.find_element_by_name('password')
+dbBox = driver.find_element_by_name('db')
+loginForm = driver.find_element_by_name('login_form')
+userBox.send_keys(username)
+pwBox.send_keys(password)
+dbBox.send_keys(db)
+loginForm.submit(), time.sleep(5)
 
 expectedList = ["Access Annotation","Sequence Search",
 			"Change Organism Database", "Data file downloads"]
