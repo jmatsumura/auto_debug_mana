@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y apt-utils \
 
 # Install phantomjs
 ENV PHANTOM_JS="phantomjs-2.1.1-linux-x86_64"
-RUN wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 -O /usr/bin/. \
+RUN wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 -O /usr/bin/phantomjs-2.1.1-linux-x86_64.tar.bz2 \
 				&& cd /usr/bin && tar -vxjf phantomjs-2.1.1-linux-x86_64.tar.bz2
 
 # Use pip to grab Selenium

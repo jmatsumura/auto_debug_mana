@@ -39,7 +39,7 @@ username 	=  str(sys.argv[1]) # let the user specify username
 password 	=  str(sys.argv[2]) # let the user specify password
 db		=  str(sys.argv[3]) # let the user specify db
 
-driver = webdriver.PhantomJS()
+driver = webdriver.PhantomJS(r'/usr/bin/phantomjs-2.1.1-linux-x86_64/bin/phantomjs')
 driver.set_window_size(1100,900)
 driver.set_window_position(0,0)
 driver.get("https://manatee-preview.igs.umaryland.edu")
