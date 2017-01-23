@@ -16,11 +16,7 @@ def main():
     driver = webdriver.PhantomJS(r'/usr/bin/phantomjs-2.1.1-linux-x86_64/bin/phantomjs')
     driver.set_window_size(1100,900)
     driver.set_window_position(0,0)
-    driver.get("https://manatee.igs.umaryland.edu")
-
-######## Check that login and home page is correct
-    expectedList = ["user_name","password","database"]
-    result = verify_results(expectedList)	
+    driver.get("https://manatee.igs.umaryland.edu")	
 
 ######## Now login and make sure gateway is fine
     userBox = driver.find_element_by_name('user')
