@@ -16,9 +16,13 @@ def main():
     driver = webdriver.PhantomJS(r'/usr/bin/phantomjs-2.1.1-linux-x86_64/bin/phantomjs')
     driver.set_window_size(1100,900)
     driver.set_window_position(0,0)
-    driver.get("https://manatee-staging.igs.umaryland.edu")
+    driver.get("https://manatee.igs.umaryland.edu")
 
-######## Check that login is correct
+######## Check that login and home page is correct
+    expectedList = ["user_name","password","database"]
+    result = verify_results(expectedList)	
+
+######## Now login and make sure gateway is fine
     userBox = driver.find_element_by_name('user')
     pwBox = driver.find_element_by_name('password')
     dbBox = driver.find_element_by_name('db')
@@ -28,13 +32,66 @@ def main():
     dbBox.send_keys(db)
     loginForm.submit(), time.sleep(5)
 
+##########################################
+##### TESTING SUITE = gateway.cgi ######
+##########################################
+
     expectedList = ["Access Annotation","Sequence Search",
                 "Change Organism Database", "Data file downloads"]
     result = verify_results(expectedList)
 
+######### Go to Genome Viewer
+	currentCGI = 'genome_viewer.cgi'
+	driver.find_element_by_partial_link_text("Genome Viewer").click(), time.sleep(15)
+	expectedList = ["Find Orf","Coord Search"]
+	result = verify_results(expectedList)	
+	driver.back() # currently, genome viewer has no home link
+
+######### Go to Genome Statistics
+	currentCGI = 'summary_page.cgi'
+	driver.find_element_by_partial_link_text("Genome Statistics").click(), time.sleep(5)
+	expectedList = ["24.8%","25.7%","24.9%","24.6%","Genome Summary",
+			"1100","tRNA","5245125 bp"]
+	result = verify_results(expectedList)	
+
+######### Go to RNA display page
+	currentCGI = 'display_feature.cgi'
+	driver.find_element_by_partial_link_text('tRNA').click(), time.sleep(5)
+	expectedList = ["VAC_171","VAC_5307","tRNA-Pro","VAC.pseudomolecule.1"]
+	result = verify_results(expectedList)	
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Go to Role Category Breakdown
+	currentCGI = 'roleid_breakdown.cgi'
+	driver.find_element_by_partial_link_text("Role Category Breakdown").click(), time.sleep(5)
+	expectedList = ["703","Transposon functions","Chemotaxis and motility",
+			"Role category not yet assigned","Chlorophyll",
+			"Hypothetical proteins","94"]
+	result = verify_results(expectedList)	
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Go to overlap summary
+	currentCGI = 'overlap_summary.cgi'
+	driver.find_element_by_partial_link_text("Overlap Summary").click(), time.sleep(5)
+	expectedList = ["VAC_148","170895","171202","44 nucleotides","VAC_150","171040","171202",
+			"VAC_5210","5173634","5174493","35 nucleotides","VAC_5211","5174340","5174493"]
+	result = verify_results(expectedList)	
+
+######### Go to GCP from overlap summary
+	driver.find_element_by_partial_link_text("VAC_148").click(), time.sleep(10)
+	expectedList = ["VAC_148","171084","170896","62","None assigned","BER SKIM"]
+	overlap_window = driver.window_handles[0]
+	gcp_window = driver.window_handles[1]
+	driver.switch_to_window(gcp_window)
+	result = verify_results(expectedList)	
+	driver.close()
+	driver.switch_to_window(overlap_window)
+	driver.find_element_by_partial_link_text("Home").click() 
+
 ##########################################
 ##### TESTING SUITE = ann_tools.cgi ######
 ##########################################
+
 	driver.find_element_by_partial_link_text("Search/Browse").click(), time.sleep(5)
 
 ######## Check that coord search is correct
@@ -50,20 +107,22 @@ def main():
 	result = verify_results(expectedList)	
 	driver.find_element_by_partial_link_text("SEARCH AGAIN").click(), time.sleep(5)
 
-    driver.quit() 
 
 ##########################################
 ######## TESTING SUITE = dumpers #########
 ##########################################
 
-
 ######### Coords
 	#driver.find_element_by_partial_link_text('Gene Coordinates').click(), time.sleep(60)
 	#result = compare_dl_files('coord.txt')
-	#log_results(currentCGI, result, fileName, 'Coords dumper')
 	#driver.find_element_by_partial_link_text("Home").click() 
     #driver.quit()
 
+    driver.quit() 
+
+###################################
+#########   FUNCTIONS   ###########
+###################################
 
 # Function to try find expected text within a page. Accepts the text 
 # that is to be parsed. Must be careful using this function as it 
