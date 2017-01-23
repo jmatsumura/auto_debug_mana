@@ -9,7 +9,7 @@ from selenium import webdriver
 
 def main():
 
-    username s=  str(sys.argv[1]) # let the user specify username
+    username =  str(sys.argv[1]) # let the user specify username
     password =  str(sys.argv[2]) # let the user specify password
     db	=  str(sys.argv[3]) # let the user specify db
 
@@ -86,6 +86,33 @@ def main():
 	result = verify_results(expectedList)	
 	driver.close()
 	driver.switch_to_window(overlap_window)
+	driver.find_element_by_partial_link_text("Home").click() 
+
+######### Run BLASTN
+	currentCGI = 'perform_blast.cgi'
+	gatewayForm = driver.find_element_by_name('form1')
+	driver.find_element_by_css_selector("#blastn").click()
+	blastInputBox = driver.find_element_by_name('seq')
+	blastInputBox.send_keys(''
+		'ATGAAATCGGTACGTTACCTTATCGGCCTCTTCGCATTTATTGCCTGCTATTACCTGTTA'
+		'CCGATCAGCACGCGTCTGCTCTGGCAACCAGATGAAACGCGTTATGCGGAAATCAGTCGG'
+		'GAAATGCTGGCATCCGGCGACTGGATTGTTCCCCATCTGTTAGGGCTACGTTATTTCGAA'
+		'AAACCCATTGCCGGATACTGGATTAACAGCATTGGGCAATGGCTATTTGGCGCGAATAAC'
+		'TTTGGTGTGCGGGCAGGCGTTATCTTTGCGACCCTGTTAACTGCCGCGCTGGTGACCTGG'
+		'TTTACTCTGCGCTTATGGCGCGATAAACGTCTGGCTTTACTCGCCACAGTAATTTATCTC'
+		'TCATTGTTTATTGTCTATGCCATCGGCACTTATGCCGTGCTCGATCCGTTTATTGCCTTC'
+		'TGGCTGGTGGCGGGAATGTGCAGCTTCTGGCTGGCAATGCAGGCACAGACGTGGAAAGGC'
+		'AAAAGCGCAGGATTTTTACTGCTGGGAATCACCTGCGGCATGGGGGTGATGACCAAAGGT'
+		'TTTCTCGCCCTTGCCGTGCCGGTATTAAGCGTGCTGCCATGGGTAGCAACGCAAAAACGC'
+		'TGGAAAGATCTCTTTATTTACGGCTGGCTGGCGGTTATCAGTTGCGTACTGACGGTTCTC'
+		'CCCTGGGGACTGGCGATAGCGCAGCGGGAGCCTGACTTCTGGCATTATTTTTTCTGGGTT'
+				'')
+	time.sleep(4)
+	gatewayForm.submit(), time.sleep(10) # let BLASTN run
+	expectedList = ["(720 letters)","VAC_241","1427","VAC_2870","VAC_1732",
+			"4,590,078","(28.2 bits)","Effective search space: 3172774528"]
+	result = verify_results(expectedList)	
+	log_results(currentCGI, result, fileName, 'BLASTN')
 	driver.find_element_by_partial_link_text("Home").click() 
 
 ##########################################
