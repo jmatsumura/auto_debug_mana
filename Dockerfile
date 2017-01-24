@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y apt-utils \
 				python3-pip \
 				wget \
 				git \
+				iputils-ping \
 				build-essential \
 				chrpath \
 				libssl-dev \
