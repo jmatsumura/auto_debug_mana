@@ -18,6 +18,8 @@ def main():
     driver.set_window_position(0,0)
     driver.get("https://manatee.igs.umaryland.edu")	
 
+    time.sleep(5)
+
 ######## Now login and make sure gateway is fine
     userBox = driver.find_element_by_name('user')
     pwBox = driver.find_element_by_name('password')
